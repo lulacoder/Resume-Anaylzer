@@ -55,10 +55,7 @@ export async function middleware(req: NextRequest) {
     if (rateLimitResponse) return rateLimitResponse;
   }
 
-  // Skip auth check if coming from OAuth callback
-  if (req.nextUrl.searchParams.has('code') || req.headers.get('referer')?.includes('/auth/callback')) {
-    return res;
-  }
+
 
   // Only check auth for protected routes
   if (req.nextUrl.pathname.startsWith('/dashboard') ||

@@ -24,16 +24,7 @@ export function handleAuthError(error: any): AuthError {
     };
   }
 
-  // Handle OAuth specific errors
-  if (error?.message?.includes('oauth_error') || 
-      error?.__isAuthError) {
-    return {
-      message: 'OAuth authentication failed',
-      code: 'OAUTH_ERROR',
-      isRetryable: true,
-      userMessage: 'Authentication failed. Please try signing in again.',
-    };
-  }
+
 
   // Handle network errors
   if (error?.message?.includes('NetworkError') || 
@@ -125,28 +116,3 @@ export async function signInWithRetry(
   });
 }
 
-/**
- * Enhanced OAuth sign in with retry logic
- */
-export async function signInWithOAuthRetry(
-  supabase: any,
-  provider: 'google' | 'github' | 'discord',
-  options?: any
-) {
-  return retryAuthOperation(async () => {
-    // Use environment variable for production, fallback to current origin
-    const redirectTo = process.env.NEXT_PUBLIC_SITE_URL 
-      ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
-      : `${window.location.origin}/auth/callback`;
-      
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo,
-        ...options,
-      },
-    });
-    if (error) throw error;
-    return data;
-  }, 2, 2000); // Fewer retries for OAuth, longer delay
-}

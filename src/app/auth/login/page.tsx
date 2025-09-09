@@ -6,14 +6,12 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { GoogleSignInButton } from '@/components/ui/google-signin-button';
-import { handleAuthError, signInWithRetry, signInWithOAuthRetry } from '@/lib/auth-error-handler';
+import { handleAuthError, signInWithRetry } from '@/lib/auth-error-handler';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
@@ -35,20 +33,7 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    setIsGoogleLoading(true);
-    setError(null);
 
-    try {
-      const supabase = createClient();
-      await signInWithOAuthRetry(supabase, 'google');
-      // Note: If successful, user will be redirected, so we don't set loading to false
-    } catch (err) {
-      const authError = handleAuthError(err);
-      setError(authError.userMessage);
-      setIsGoogleLoading(false);
-    }
-  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-8 px-4 bg-gray-50">
@@ -61,25 +46,6 @@ export default function LoginPage() {
 
         {/* Sign In Form */}
         <div className="bg-white shadow-lg rounded-lg px-8 pt-8 pb-6 mb-6">
-          {/* Google Sign In */}
-          <div className="mb-6">
-            <GoogleSignInButton
-              onClick={handleGoogleSignIn}
-              loading={isGoogleLoading}
-              disabled={isLoading}
-            />
-          </div>
-
-          {/* Divider */}
-          <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or continue with email</span>
-            </div>
-          </div>
-
           {/* Email Sign In Form */}
           <form onSubmit={handleSignIn} className="space-y-4">
             <div>
@@ -93,7 +59,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                disabled={isLoading || isGoogleLoading}
+                disabled={isLoading}
                 error={!!error}
               />
             </div>
@@ -109,7 +75,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                disabled={isLoading || isGoogleLoading}
+                disabled={isLoading}
                 error={!!error}
               />
             </div>
@@ -126,7 +92,6 @@ export default function LoginPage() {
               type="submit"
               className="w-full"
               loading={isLoading}
-              disabled={isGoogleLoading}
               loadingText="Signing in..."
             >
               Sign in

@@ -1,22 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { GoogleSignInButton } from '@/components/ui/google-signin-button';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const router = useRouter();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,9 +39,6 @@ export default function SignupPage() {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          emailRedirectTo: `${location.origin}/auth/callback`,
-        },
       });
 
       if (error) {
@@ -54,41 +47,14 @@ export default function SignupPage() {
         setSuccess('Check your email to confirm your account before signing in.');
       }
     } catch (err) {
+      console.error('Signup error:', err);
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoogleSignUp = async () => {
-    setIsGoogleLoading(true);
-    setError(null);
-    setSuccess(null);
 
-    try {
-      const supabase = createClient();
-      // Use environment variable for production, fallback to current origin
-      const redirectTo = process.env.NEXT_PUBLIC_SITE_URL 
-        ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
-        : `${location.origin}/auth/callback`;
-        
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo,
-        },
-      });
-
-      if (error) {
-        setError(error.message);
-        setIsGoogleLoading(false);
-      }
-      // Note: If successful, user will be redirected, so we don't set loading to false
-    } catch (err) {
-      setError('Failed to sign up with Google. Please try again.');
-      setIsGoogleLoading(false);
-    }
-  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-8 px-4 bg-gray-50">
@@ -101,26 +67,6 @@ export default function SignupPage() {
 
         {/* Sign Up Form */}
         <div className="bg-white shadow-lg rounded-lg px-8 pt-8 pb-6 mb-6">
-          {/* Google Sign Up */}
-          <div className="mb-6">
-            <GoogleSignInButton
-              text="Continue with Google"
-              onClick={handleGoogleSignUp}
-              loading={isGoogleLoading}
-              disabled={isLoading}
-            />
-          </div>
-
-          {/* Divider */}
-          <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or continue with email</span>
-            </div>
-          </div>
-
           {/* Email Sign Up Form */}
           <form onSubmit={handleSignUp} className="space-y-4">
             <div>
@@ -134,7 +80,7 @@ export default function SignupPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                disabled={isLoading || isGoogleLoading}
+                disabled={isLoading}
                 error={!!error}
               />
             </div>
@@ -150,7 +96,7 @@ export default function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                disabled={isLoading || isGoogleLoading}
+                disabled={isLoading}
                 error={!!error}
               />
               <p className="text-xs text-gray-500 mt-1">Must be at least 6 characters long</p>
@@ -167,7 +113,7 @@ export default function SignupPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                disabled={isLoading || isGoogleLoading}
+                disabled={isLoading}
                 error={!!error}
               />
             </div>
@@ -191,7 +137,6 @@ export default function SignupPage() {
               type="submit"
               className="w-full"
               loading={isLoading}
-              disabled={isGoogleLoading}
               loadingText="Creating account..."
             >
               Create account

@@ -24,7 +24,7 @@ export async function refreshSession() {
 }
 
 /**
- * Enhanced logout function that clears both app and Google sessions
+ * Enhanced logout function that clears app sessions
  */
 export async function signOutCompletely() {
   try {
@@ -97,63 +97,10 @@ export async function validateAndRefreshSession() {
   }
 }
 
-/**
- * Utility function to test Google OAuth configuration (client-side)
- * This function helps verify that the OAuth flow is properly configured
- */
-export async function testGoogleOAuthConfig() {
-  try {
-    const supabase = createBrowserClient();
-    
-    // Test if we can get the current session
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError) {
-      console.error('Session error:', sessionError);
-      return { success: false, error: sessionError.message };
-    }
 
-    // If we have a session, verify user data mapping
-    if (session?.user) {
-      const user = session.user;
-      
-      // Check if user has Google provider data
-      const hasGoogleProvider = user.app_metadata?.providers?.includes('google');
-      const hasGoogleIdentity = user.identities?.some(identity => identity.provider === 'google');
-      
-      console.log('User data verification:', {
-        id: user.id,
-        email: user.email,
-        providers: user.app_metadata?.providers,
-        hasGoogleProvider,
-        hasGoogleIdentity,
-        userMetadata: user.user_metadata,
-      });
-
-      return {
-        success: true,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.user_metadata?.full_name || user.user_metadata?.name,
-          avatar: user.user_metadata?.avatar_url || user.user_metadata?.picture,
-          provider: hasGoogleProvider ? 'google' : 'email',
-        }
-      };
-    }
-
-    return { success: true, message: 'No active session' };
-  } catch (error) {
-    console.error('OAuth config test error:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    };
-  }
-}
 
 /**
- * Get user profile information including Google data (client-side)
+ * Get user profile information (client-side)
  */
 export async function getUserProfile() {
   const supabase = createBrowserClient();
@@ -164,24 +111,15 @@ export async function getUserProfile() {
     return { user: null, error: error?.message };
   }
 
-  // Extract Google profile data if available
-  const googleIdentity = user.identities?.find(identity => identity.provider === 'google');
-  
   return {
     user: {
       id: user.id,
       email: user.email,
       name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0],
-      avatar: user.user_metadata?.avatar_url || user.user_metadata?.picture,
-      provider: googleIdentity ? 'google' : 'email',
+      avatar: user.user_metadata?.avatar_url,
+      provider: 'email',
       createdAt: user.created_at,
       lastSignIn: user.last_sign_in_at,
-      googleData: googleIdentity ? {
-        id: googleIdentity.id,
-        email: googleIdentity.identity_data?.email,
-        name: googleIdentity.identity_data?.full_name,
-        picture: googleIdentity.identity_data?.picture,
-      } : null,
     },
     error: null,
   };
