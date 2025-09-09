@@ -1,0 +1,26 @@
+import { createBrowserClient } from '@supabase/ssr';
+
+export function createClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      auth: {
+        flowType: 'pkce',
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+      },
+      global: {
+        headers: {
+          'X-Client-Info': 'resume-analyzer-web',
+        },
+      },
+      // Add timeout configuration
+      realtime: {
+        timeout: 30000, // 30 seconds
+      },
+    }
+  );
+}
+

@@ -1,0 +1,36 @@
+{
+  "mcpServers": {
+    "Context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ],
+      "env": {},
+      "disabled": false,
+      "autoApprove": [
+        "resolve-library-id",
+        "get-library-docs"
+      ]
+    },
+    "supabase-mcp": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        "--project-ref=uylewhickrfkymjkhmti"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "sbp_b06e20ea3c6852ebe222dde6cbfa6d1e78e625aa"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "get_project_url",
+        "get_anon_key",
+        "execute_sql"
+      ]
+    }
+  }
+}
