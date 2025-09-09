@@ -56,7 +56,7 @@ Set these in your Vercel project dashboard:
 NEXT_PUBLIC_SITE_URL=https://resume-anayzer-gamma.vercel.app
 NEXT_PUBLIC_SUPABASE_URL=https://qvfwskzszeaexsiwuqit.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF2Zndza3pzemVhZXhzaXd1cWl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxMzEzMDIsImV4cCI6MjA2NzcwNzMwMn0.Dcnk8UhI_mheA6K3Mv7oDdGpIbCeHVuuVyz_iNWerWs
-GEMINI_API_KEY=AIzaSyC2hiKulLReSYCcE7Vb-bOiJrekcXX6lAg
+
 ```
 
 ## 🚨 Important Note
