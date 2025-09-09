@@ -28,7 +28,7 @@
    - Client Secret: (from Google Cloud Console)
 6. Set redirect URLs:
    - Development: `http://localhost:3000/auth/callback`
-   - Production: `https://your-production-domain.com/auth/callback`
+   - Production: `https://resume-anayzer-gamma.vercel.app/auth/callback`
 7. Save the configuration
 
 ## Step 3: Environment Variables

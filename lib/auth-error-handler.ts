@@ -134,10 +134,15 @@ export async function signInWithOAuthRetry(
   options?: any
 ) {
   return retryAuthOperation(async () => {
+    // Use environment variable for production, fallback to current origin
+    const redirectTo = process.env.NEXT_PUBLIC_SITE_URL 
+      ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
+      : `${window.location.origin}/auth/callback`;
+      
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo,
         ...options,
       },
     });
