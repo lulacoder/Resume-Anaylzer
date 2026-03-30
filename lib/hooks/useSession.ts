@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { validateAndRefreshSession, signOutCompletely } from '@/lib/auth-utils';
 import { User, Session } from '@supabase/supabase-js';
-import { useRouter } from 'next/navigation';
 
 interface UseSessionReturn {
   user: User | null;
@@ -20,7 +19,6 @@ export function useSession(): UseSessionReturn {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
 
   const handleSignOut = async () => {
     setLoading(true);
@@ -29,7 +27,9 @@ export function useSession(): UseSessionReturn {
     if (result.success) {
       setUser(null);
       setSession(null);
-      router.push('/auth/login');
+      // Use full page navigation to ensure session is fully cleared
+      // before middleware checks auth state on the login route
+      window.location.href = '/auth/login';
     } else {
       setError(result.error || 'Failed to sign out');
     }
@@ -49,7 +49,7 @@ export function useSession(): UseSessionReturn {
         // Session is invalid, redirect to login
         setUser(null);
         setSession(null);
-        router.push('/auth/login');
+        window.location.href = '/auth/login';
       }
     }
   };
@@ -89,7 +89,8 @@ export function useSession(): UseSessionReturn {
         setError(null);
         
         if (event === 'SIGNED_OUT') {
-          router.push('/auth/login');
+          // Use full page navigation for reliable redirect after session cleared
+          window.location.href = '/auth/login';
         } else if (event === 'SIGNED_IN' && session) {
           // Only redirect to dashboard if we're on auth pages or root
           const currentPath = window.location.pathname;
@@ -97,7 +98,7 @@ export function useSession(): UseSessionReturn {
           const isRootPage = currentPath === '/';
           
           if (isAuthPage || isRootPage) {
-            router.push('/dashboard');
+            window.location.href = '/dashboard';
           }
           // Otherwise, stay on the current page
         }
@@ -115,7 +116,7 @@ export function useSession(): UseSessionReturn {
       subscription.unsubscribe();
       clearInterval(refreshInterval);
     };
-  }, [router, session]);
+  }, []);
 
   return {
     user,

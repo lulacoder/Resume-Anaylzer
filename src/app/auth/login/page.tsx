@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,18 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    const checkExistingSession = async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        window.location.href = '/dashboard';
+      }
+    };
+    checkExistingSession();
+  }, []);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,8 +33,9 @@ export default function LoginPage() {
     try {
       const supabase = createClient();
       await signInWithRetry(supabase, { email, password });
-      router.push('/dashboard');
-      router.refresh();
+      // Use full page navigation to ensure session cookie is persisted
+      // before middleware checks it on the dashboard route
+      window.location.href = '/dashboard';
     } catch (err) {
       const authError = handleAuthError(err);
       setError(authError.userMessage);

@@ -3,5 +3,5 @@ import { signOut } from '@/lib/actions';
 
 export async function POST(request: NextRequest) {
   await signOut();
-  return NextResponse.redirect(new URL('/', request.url));
+  return NextResponse.redirect(new URL('/auth/login', request.url));
 }

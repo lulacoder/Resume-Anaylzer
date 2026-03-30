@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,
   
+  // Acknowledge Turbopack (default in Next.js 16)
+  turbopack: {},
+  
   // TypeScript configuration
   typescript: {
     ignoreBuildErrors: false, // Ensure type safety in production
