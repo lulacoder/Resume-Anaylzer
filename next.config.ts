@@ -5,11 +5,6 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,
   
-  // ESLint configuration - allow warnings in production builds
-  eslint: {
-    ignoreDuringBuilds: process.env.NODE_ENV === 'production',
-  },
-  
   // TypeScript configuration
   typescript: {
     ignoreBuildErrors: false, // Ensure type safety in production
