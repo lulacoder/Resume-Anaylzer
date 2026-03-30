@@ -4,28 +4,25 @@ import { AnalysisResult } from '@/components/AnalysisResult';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { getAnalysisById } from '@/lib/supabase/queries';
 
 export default async function AnalysisDetailPage({ params }: { params: Promise<{ id: string }> }) {
   // Await params in Next.js 15
   const { id } = await params;
   const supabase = await createClient();
-  
-  // Get the analysis by ID - removing enhanced_analysis column since it doesn't exist
-  const { data: analysis, error } = await supabase
-    .from('analyses')
-    .select(`
-      id,
-      created_at,
-      job_title,
-      job_description,
-      match_score,
-      analysis_result,
-      resume_id
-    `)
-    .eq('id', id)
-    .single();
 
-  if (error || !analysis) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    notFound();
+  }
+
+  let analysis;
+  try {
+    analysis = await getAnalysisById(id, user.id);
+  } catch (error) {
     console.error('Error fetching analysis:', error);
     notFound();
   }

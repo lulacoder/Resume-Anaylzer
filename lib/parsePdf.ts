@@ -3,7 +3,7 @@ import { measurePerformance } from './performance';
 // Type definitions for PDF.js
 interface PDFJSLib {
   getDocument: (params: {
-    data: ArrayBuffer;
+    data: ArrayBuffer | Uint8Array;
     disableStream?: boolean;
     disableAutoFetch?: boolean;
     rangeChunkSize?: number;
@@ -14,6 +14,10 @@ interface PDFJSLib {
   }) => {
     promise: Promise<PDFDocumentProxy>;
   };
+  GlobalWorkerOptions?: {
+    workerSrc?: string;
+  };
+  version?: string;
 }
 
 interface PDFDocumentProxy {
@@ -37,6 +41,85 @@ interface PDFPageProxy {
 
 // Lazy load PDF.js to avoid server-side issues during build
 let pdfjsLib: PDFJSLib | null = null;
+const PDF_SIGNATURE_BYTES = [0x25, 0x50, 0x44, 0x46, 0x2d]; // %PDF-
+const PDF_SIGNATURE_SCAN_LIMIT = 1024;
+
+function cloneArrayBuffer(fileBuffer: ArrayBuffer): ArrayBuffer {
+  return fileBuffer.slice(0);
+}
+
+function toPdfData(fileBuffer: ArrayBuffer): Uint8Array {
+  try {
+    // PDF.js may transfer ownership of TypedArrays to worker threads.
+    // Always pass a fresh copy to avoid detaching/reusing caller buffers.
+    return new Uint8Array(cloneArrayBuffer(fileBuffer));
+  } catch {
+    throw new PDFProcessingError('PDF binary data became unavailable. Please re-upload the file and try again.');
+  }
+}
+
+function toArrayBuffer(data: ArrayBuffer | Uint8Array): ArrayBuffer {
+  if (data instanceof Uint8Array) {
+    return data.slice().buffer as ArrayBuffer;
+  }
+  return data;
+}
+
+function hasPdfSignature(fileBuffer: ArrayBuffer): boolean {
+  let bytes: Uint8Array;
+  try {
+    bytes = new Uint8Array(fileBuffer);
+  } catch {
+    return false;
+  }
+
+  if (bytes.length < PDF_SIGNATURE_BYTES.length) {
+    return false;
+  }
+
+  const maxStart = Math.min(
+    bytes.length - PDF_SIGNATURE_BYTES.length,
+    PDF_SIGNATURE_SCAN_LIMIT - PDF_SIGNATURE_BYTES.length
+  );
+
+  for (let i = 0; i <= maxStart; i++) {
+    let match = true;
+    for (let j = 0; j < PDF_SIGNATURE_BYTES.length; j++) {
+      if (bytes[i + j] !== PDF_SIGNATURE_BYTES[j]) {
+        match = false;
+        break;
+      }
+    }
+    if (match) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function configurePdfWorker(pdfLib: PDFJSLib): void {
+  const isClient = typeof window !== 'undefined';
+  if (!isClient) {
+    return;
+  }
+
+  if (!pdfLib.GlobalWorkerOptions) {
+    return;
+  }
+
+  if (pdfLib.GlobalWorkerOptions.workerSrc) {
+    return;
+  }
+
+  // Prefer local bundled worker and fallback to CDN if URL resolution fails.
+  try {
+    pdfLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
+  } catch {
+    const version = pdfLib.version || '5.3.93';
+    pdfLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
+  }
+}
 
 async function getPdfjsLib(): Promise<PDFJSLib> {
   if (!pdfjsLib) {
@@ -49,6 +132,7 @@ async function getPdfjsLib(): Promise<PDFJSLib> {
       if (isClient) {
         // Client-side: use standard build
         pdfjsLib = await import('pdfjs-dist') as PDFJSLib;
+        configurePdfWorker(pdfjsLib);
       } else {
         // Server-side: use a simple mock implementation for validation
         // This avoids the DOMMatrix issue in Node.js
@@ -66,14 +150,11 @@ async function getPdfjsLib(): Promise<PDFJSLib> {
 // Create a simple mock implementation for server-side PDF validation
 function createServerSidePdfMock(): PDFJSLib {
   return {
-    getDocument: (params: { data: ArrayBuffer }) => {
+    getDocument: (params: { data: ArrayBuffer | Uint8Array }) => {
       // For server-side, we'll just do basic header validation
       // and return a simplified document proxy
-      const buffer = params.data;
-      const header = new Uint8Array(buffer.slice(0, 4));
-      const headerStr = String.fromCharCode(...header);
-
-      if (headerStr !== '%PDF') {
+      const buffer = toArrayBuffer(params.data);
+      if (!hasPdfSignature(buffer)) {
         return {
           promise: Promise.reject(new Error('Not a valid PDF file'))
         };
@@ -158,10 +239,7 @@ export async function parsePdf(
         console.log('Server-side PDF processing - using basic text extraction');
 
         // Basic PDF header validation
-        const header = new Uint8Array(fileBuffer.slice(0, 4));
-        const headerStr = String.fromCharCode.apply(null, Array.from(header));
-
-        if (headerStr !== '%PDF') {
+        if (!hasPdfSignature(fileBuffer)) {
           throw new PDFProcessingError('Not a valid PDF file');
         }
 
@@ -173,10 +251,9 @@ export async function parsePdf(
       // Client-side processing
       await getPdfjsLib();
 
-      // Validate the PDF before processing
-      const validation = await validatePdf(fileBuffer);
-      if (!validation.valid) {
-        throw new PDFProcessingError(validation.error || 'Invalid PDF file');
+      // Fast local signature check before expensive parsing.
+      if (!hasPdfSignature(fileBuffer)) {
+        throw new PDFProcessingError('Not a valid PDF file');
       }
 
       // Determine processing strategy based on file size
@@ -229,7 +306,7 @@ async function processStandardPdf(fileBuffer: ArrayBuffer): Promise<string | nul
     const pdfLib = await getPdfjsLib();
     // Load the PDF document with server-side configuration
     const loadingTask = pdfLib.getDocument({
-      data: fileBuffer,
+      data: toPdfData(fileBuffer),
       ...(typeof window === 'undefined' && {
         isEvalSupported: false,
         disableFontFace: true,
@@ -276,7 +353,7 @@ async function processLargePdf(
 
     // Load the PDF document with streaming enabled
     const loadingTask = pdfLib.getDocument({
-      data: fileBuffer,
+      data: toPdfData(fileBuffer),
       disableStream: false,
       disableAutoFetch: false,
       rangeChunkSize: CHUNK_SIZE,
@@ -344,7 +421,7 @@ async function processVeryLargePdf(
     const pdfLib = await getPdfjsLib();
     // Load the PDF document with optimized streaming settings
     const loadingTask = pdfLib.getDocument({
-      data: fileBuffer,
+      data: toPdfData(fileBuffer),
       disableStream: false,
       disableAutoFetch: false,
       rangeChunkSize: CHUNK_SIZE / 2, // Smaller chunks for very large files
@@ -446,10 +523,7 @@ export async function validatePdf(fileBuffer: ArrayBuffer): Promise<{
 }> {
   try {
     // Check basic PDF header - this works in both client and server
-    const header = new Uint8Array(fileBuffer.slice(0, 4));
-    const headerStr = String.fromCharCode.apply(null, Array.from(header));
-
-    if (headerStr !== '%PDF') {
+    if (!hasPdfSignature(fileBuffer)) {
       return { valid: false, error: 'Not a valid PDF file' };
     }
 
@@ -465,7 +539,7 @@ export async function validatePdf(fileBuffer: ArrayBuffer): Promise<{
     // Client-side full validation
     const pdfLib = await getPdfjsLib();
     const loadingTask = pdfLib.getDocument({
-      data: fileBuffer,
+      data: toPdfData(cloneArrayBuffer(fileBuffer)),
       disableStream: true,
       disableAutoFetch: true,
     });
@@ -512,7 +586,7 @@ export async function getPdfMetadata(fileBuffer: ArrayBuffer): Promise<{
   try {
     const pdfLib = await getPdfjsLib();
     const loadingTask = pdfLib.getDocument({
-      data: fileBuffer,
+      data: toPdfData(cloneArrayBuffer(fileBuffer)),
       disableStream: true,
       disableAutoFetch: true,
     });

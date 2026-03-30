@@ -18,7 +18,8 @@ export const getUserAnalysisHistory = cache(async (userId: string, limit: number
         id,
         created_at,
         job_title,
-        match_score
+        match_score,
+        enhanced_analysis
       `)
       .eq('user_id', userId)
       .order('created_at', { ascending: false })

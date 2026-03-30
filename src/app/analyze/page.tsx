@@ -1,27 +1,50 @@
 'use client';
 
-import { useActionState } from 'react';
-import { analyzeResumeAction } from '@/lib/actions';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { DynamicAnalysisResult } from '@/lib/dynamic-imports';
-import { useState, Suspense } from 'react';
+import { useRef, useState, Suspense } from 'react';
 import { AnalysisSpinner } from '@/components/ui/spinner';
 import { SlideUpTransition } from '@/components/ui/Transition';
+import { parsePdf } from '@/lib/parsePdf';
+import type { EnhancedAnalysisResult } from '@/types/index';
 
-const initialState = {
-  message: '',
-  error: undefined,
-  analysis: null,
+type AnalysisRecord = {
+  id: string;
+  created_at: string;
+  job_title: string | null;
+  match_score: number | null;
+  analysis_result: unknown;
+  enhanced_analysis?: EnhancedAnalysisResult | null;
+};
+
+type StreamEvent =
+  | { type: 'stage'; stage: 'validating' | 'uploading' | 'saving' | 'analyzing' | 'finalizing' }
+  | { type: 'partial'; data: Partial<EnhancedAnalysisResult> }
+  | { type: 'complete'; analysis: AnalysisRecord }
+  | { type: 'error'; error: string };
+
+const STAGE_LABELS: Record<string, string> = {
+  validating: 'Validating and extracting resume text...',
+  uploading: 'Uploading resume...',
+  saving: 'Saving resume details...',
+  analyzing: 'Running AI analysis...',
+  finalizing: 'Finalizing analysis report...',
 };
 
 export default function AnalyzePage() {
-  const [state, formAction] = useActionState(analyzeResumeAction, initialState);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState('');
+  const [analysis, setAnalysis] = useState<AnalysisRecord | null>(null);
+  const [stage, setStage] = useState<string>('');
+  const [partialAnalysis, setPartialAnalysis] = useState<Partial<EnhancedAnalysisResult> | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const formRef = useRef<HTMLFormElement | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -80,22 +103,133 @@ export default function AnalyzePage() {
     }
   };
 
-  const handleSubmit = async (formData: FormData) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
     setIsSubmitting(true);
+    setError(null);
+    setMessage('');
+    setAnalysis(null);
+    setPartialAnalysis(null);
     setFileError(null);
+
+    const formData = new FormData(event.currentTarget);
+    const resumeFile = formData.get('resume');
+
+    if (!(resumeFile instanceof File)) {
+      setError('Resume file is required.');
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
-      await formAction(formData);
+      setStage('validating');
+
+      const fileBuffer = await resumeFile.arrayBuffer();
+      const extractedText = await parsePdf(fileBuffer);
+      if (!extractedText || extractedText.length < 10) {
+        setError('Could not extract meaningful text from PDF. Please ensure the file contains selectable text.');
+        return;
+      }
+
+      formData.set('resumeText', extractedText);
+
+      const abortController = new AbortController();
+      abortControllerRef.current = abortController;
+
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        body: formData,
+        signal: abortController.signal,
+      });
+
+      if (!response.ok) {
+        const responseText = await response.text();
+        let errorMessage = 'Analysis request failed.';
+
+        try {
+          const parsed = JSON.parse(responseText) as { error?: string };
+          errorMessage = parsed.error || errorMessage;
+        } catch {
+          if (responseText) {
+            errorMessage = responseText;
+          }
+        }
+
+        setError(errorMessage);
+        return;
+      }
+
+      if (!response.body) {
+        setError('Streaming response was not available. Please try again.');
+        return;
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffered = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          break;
+        }
+
+        buffered += decoder.decode(value, { stream: true });
+        const lines = buffered.split('\n');
+        buffered = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.trim()) {
+            continue;
+          }
+
+          const payload = JSON.parse(line) as StreamEvent;
+
+          if (payload.type === 'stage') {
+            setStage(payload.stage);
+          }
+
+          if (payload.type === 'partial') {
+            setPartialAnalysis(payload.data || null);
+          }
+
+          if (payload.type === 'complete') {
+            setAnalysis(payload.analysis);
+            setMessage('Analysis complete');
+            setStage('');
+          }
+
+          if (payload.type === 'error') {
+            setError(payload.error);
+            setStage('');
+          }
+        }
+      }
+    } catch (submissionError) {
+      if (submissionError instanceof DOMException && submissionError.name === 'AbortError') {
+        return;
+      }
+
+      console.error('Analyze submission error:', submissionError);
+      const message = submissionError instanceof Error
+        ? submissionError.message
+        : 'Failed to process the uploaded PDF. Please try another file.';
+
+      setStage('');
+      setError(message || 'Failed to process the uploaded PDF. Please try another file.');
     } finally {
+      abortControllerRef.current = null;
       setIsSubmitting(false);
     }
   };
 
-  const formatError = (error: string | Record<string, string[] | undefined> | undefined) => {
-    if (typeof error === 'string') return error;
-    if (typeof error === 'object' && error !== null) {
-      return Object.values(error).flat().filter(Boolean).join(', ');
-    }
-    return 'An unexpected error occurred';
+  const handleCancel = () => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    setIsSubmitting(false);
+    setStage('');
+    setError('Analysis cancelled.');
   };
 
   return (
@@ -111,7 +245,7 @@ export default function AnalyzePage() {
 
       <Card className="border-t-4 border-t-primary shadow-lg">
         <div className="p-6 md:p-8">
-          <form action={handleSubmit} className="space-y-6">
+          <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
             {/* File Upload Area */}
             <div className="space-y-2">
               <label htmlFor="resume" className="block text-base font-medium">
@@ -178,7 +312,7 @@ export default function AnalyzePage() {
             {/* Job Title */}
             <div className="space-y-2">
               <label htmlFor="jobTitle" className="block text-base font-medium">
-                Job Title <span className="text-sm text-muted-foreground">(Optional)</span>
+                Job Title
               </label>
               <Input
                 id="jobTitle"
@@ -187,6 +321,7 @@ export default function AnalyzePage() {
                 placeholder="e.g. Software Engineer, Product Manager"
                 disabled={isSubmitting}
                 className="h-12"
+                required
               />
             </div>
 
@@ -228,7 +363,7 @@ export default function AnalyzePage() {
                 {isSubmitting ? (
                   <div className="flex items-center justify-center space-x-2">
                     <div className="h-5 w-5 animate-spin rounded-full border-3 border-white border-t-transparent" />
-                    <span>Analyzing Resume...</span>
+                    <span>{STAGE_LABELS[stage] || 'Analyzing Resume...'}</span>
                   </div>
                 ) : (
                   <>
@@ -240,13 +375,23 @@ export default function AnalyzePage() {
                   </>
                 )}
               </Button>
+              {isSubmitting && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full mt-3"
+                  onClick={handleCancel}
+                >
+                  Cancel Analysis
+                </Button>
+              )}
             </div>
           </form>
         </div>
       </Card>
 
       {/* Features Section */}
-      {!state.analysis && !isSubmitting && (
+      {!analysis && !isSubmitting && (
         <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="flex flex-col items-center text-center p-4">
             <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/30 mb-4">
@@ -291,7 +436,7 @@ export default function AnalyzePage() {
       )}
 
       {/* Success Message */}
-      <SlideUpTransition show={!!state.message}>
+      <SlideUpTransition show={!!message}>
         <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg shadow-sm">
           <div className="flex items-start">
             <div className="flex-shrink-0">
@@ -301,14 +446,14 @@ export default function AnalyzePage() {
               </svg>
             </div>
             <div className="ml-3">
-              <p className="text-sm font-medium text-green-800 dark:text-green-200">{state.message}</p>
+              <p className="text-sm font-medium text-green-800 dark:text-green-200">{message}</p>
             </div>
           </div>
         </div>
       </SlideUpTransition>
 
       {/* Error Message */}
-      <SlideUpTransition show={!!state.error}>
+      <SlideUpTransition show={!!error}>
         <div className="mt-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg shadow-sm">
           <div className="flex items-start">
             <div className="flex-shrink-0">
@@ -321,15 +466,33 @@ export default function AnalyzePage() {
             <div className="ml-3">
               <h3 className="text-sm font-medium text-red-800 dark:text-red-200">Analysis Error</h3>
               <div className="mt-2 text-sm text-red-700 dark:text-red-300">
-                <p>{formatError(state.error)}</p>
+                <p>{error}</p>
               </div>
             </div>
           </div>
         </div>
       </SlideUpTransition>
 
+      {/* Partial Analysis Preview */}
+      <SlideUpTransition show={isSubmitting && !!partialAnalysis}>
+        <div className="mt-6 p-4 border rounded-lg bg-muted/30">
+          <h3 className="font-semibold mb-2">Live Analysis Preview</h3>
+          <div className="space-y-2 text-sm">
+            {typeof partialAnalysis?.overall_score === 'number' && (
+              <p>Current Match Score: <span className="font-semibold">{partialAnalysis.overall_score}%</span></p>
+            )}
+            {partialAnalysis?.summary && <p>{partialAnalysis.summary}</p>}
+            {partialAnalysis?.analysis_metadata?.confidence_score !== undefined && (
+              <p className="text-muted-foreground">
+                Confidence: {partialAnalysis.analysis_metadata.confidence_score}%
+              </p>
+            )}
+          </div>
+        </div>
+      </SlideUpTransition>
+
       {/* Analysis Results */}
-      <SlideUpTransition show={!!state.analysis}>
+      <SlideUpTransition show={!!analysis}>
         <div className="mt-12">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
@@ -355,7 +518,7 @@ export default function AnalyzePage() {
                 <p className="mt-4 text-muted-foreground">Preparing your analysis results...</p>
               </div>
             }>
-              {state.analysis && <DynamicAnalysisResult analysis={state.analysis} />}
+              {analysis && <DynamicAnalysisResult analysis={analysis} />}
             </Suspense>
           </div>
         </div>

@@ -4,12 +4,14 @@ import { redirect } from 'next/navigation';
 import { DashboardAnalysisCard } from '@/components/DashboardAnalysisCard';
 import { Button } from '@/components/ui/button';
 import { getUserAnalysisHistory } from '@/lib/supabase/queries';
+import type { EnhancedAnalysisResult } from '@/types/index';
 
 interface DashboardAnalysis {
   id: string;
   created_at: string;
   job_title: string | null;
   match_score: number | null;
+  enhanced_analysis?: EnhancedAnalysisResult | null;
 }
 
 export default async function DashboardPage() {

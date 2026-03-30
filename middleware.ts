@@ -19,6 +19,11 @@ const apiRateLimit = createRateLimitMiddleware(
   }
 );
 
+const analyzeRateLimit = createRateLimitMiddleware(
+  RATE_LIMITS.ANALYSIS,
+  (request) => getClientIP(request)
+);
+
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
 
@@ -50,7 +55,10 @@ export async function middleware(req: NextRequest) {
     if (rateLimitResponse) return rateLimitResponse;
   }
 
-  if (req.nextUrl.pathname.startsWith('/api/')) {
+  if (req.nextUrl.pathname === '/api/analyze') {
+    const rateLimitResponse = await analyzeRateLimit(req);
+    if (rateLimitResponse) return rateLimitResponse;
+  } else if (req.nextUrl.pathname.startsWith('/api/')) {
     const rateLimitResponse = await apiRateLimit(req);
     if (rateLimitResponse) return rateLimitResponse;
   }
