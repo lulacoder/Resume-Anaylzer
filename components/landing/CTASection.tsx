@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Sparkles, Clock, CheckCircle } from 'lucide-react';
+import { ArrowRight, CheckCircle } from 'lucide-react';
 
 export default function CTASection() {
   const [isVisible, setIsVisible] = useState(false);
@@ -27,80 +27,67 @@ export default function CTASection() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-24 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 relative overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute inset-0">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-600/90 to-purple-700/90"></div>
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
+    <section ref={sectionRef} className="section-padding bg-primary relative overflow-hidden">
+      {/* Background pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[size:40px_40px]"></div>
       </div>
+      
+      {/* Gradient overlay */}
+      <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-primary-hover/50 to-transparent"></div>
 
-      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        {/* Main CTA */}
-        <div className={`transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <div className="flex justify-center mb-6">
-            <div className="bg-white/20 rounded-full p-4">
-              <Sparkles className="w-12 h-12 text-white" />
+      <div className="section-container relative z-10">
+        <div className={`
+          max-w-3xl mx-auto text-center
+          transition-all duration-700
+          ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
+        `}>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary-foreground mb-6">
+            Ready to Land Your Dream Job?
+          </h2>
+          
+          <p className="text-xl text-primary-foreground/80 mb-8 max-w-2xl mx-auto">
+            Join thousands of job seekers who have improved their resumes and boosted their interview chances with our AI-powered analyzer.
+          </p>
+
+          {/* Benefits */}
+          <div className="flex flex-wrap justify-center gap-6 mb-10">
+            <div className="flex items-center gap-2 text-primary-foreground/90">
+              <CheckCircle className="w-5 h-5" />
+              <span>Free to start</span>
+            </div>
+            <div className="flex items-center gap-2 text-primary-foreground/90">
+              <CheckCircle className="w-5 h-5" />
+              <span>No credit card required</span>
+            </div>
+            <div className="flex items-center gap-2 text-primary-foreground/90">
+              <CheckCircle className="w-5 h-5" />
+              <span>Results in 30 seconds</span>
             </div>
           </div>
 
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-            Ready to Land Your
-            <br />
-            <span className="bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent">
-              Dream Job?
-            </span>
-          </h2>
-
-          <p className="text-xl sm:text-2xl text-blue-100 mb-8 leading-relaxed max-w-3xl mx-auto">
-            Transform your job search with AI-powered resume analysis. 
-            Get detailed feedback and improve your chances of landing interviews.
-          </p>
-        </div>
-
-        {/* Benefits List */}
-        <div className={`grid md:grid-cols-3 gap-6 mb-10 transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <div className="flex items-center justify-center gap-3 text-white">
-            <CheckCircle className="w-6 h-6 text-green-300 flex-shrink-0" />
-            <span className="text-lg">Free to get started</span>
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/auth/signup">
+              <Button 
+                size="lg" 
+                variant="secondary"
+                className="w-full sm:w-auto text-base px-8 bg-white text-primary hover:bg-white/90 group"
+              >
+                Get Started Free
+                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </Link>
+            <Link href="/auth/login">
+              <Button 
+                size="lg"
+                variant="outline"
+                className="w-full sm:w-auto text-base px-8 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
+              >
+                Sign In
+              </Button>
+            </Link>
           </div>
-          <div className="flex items-center justify-center gap-3 text-white">
-            <Clock className="w-6 h-6 text-blue-300 flex-shrink-0" />
-            <span className="text-lg">Results in 30 seconds</span>
-          </div>
-          <div className="flex items-center justify-center gap-3 text-white">
-            <Sparkles className="w-6 h-6 text-purple-300 flex-shrink-0" />
-            <span className="text-lg">AI-powered insights</span>
-          </div>
-        </div>
-
-        {/* CTA Buttons */}
-        <div className={`flex flex-col sm:flex-row gap-4 justify-center items-center mb-8 transition-all duration-1000 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <Link href="/auth/signup">
-            <Button 
-              size="lg" 
-              className="group bg-white text-blue-600 hover:bg-gray-100 px-10 py-5 text-xl font-bold shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105 border-0"
-            >
-              Start Free Analysis
-              <ArrowRight className="w-6 h-6 ml-3 group-hover:translate-x-1 transition-transform" />
-            </Button>
-          </Link>
-          <Link href="/auth/login">
-            <Button 
-              variant="outline" 
-              size="lg"
-              className="px-10 py-5 text-xl font-bold border-2 border-white text-white hover:bg-white hover:text-blue-600 transition-all duration-300"
-            >
-              Sign In
-            </Button>
-          </Link>
-        </div>
-
-        {/* Trust Indicator */}
-        <div className={`transition-all duration-1000 delay-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <p className="text-blue-200 text-sm">
-            ✨ No credit card required • 🔒 100% secure • 🚀 Instant results
-          </p>
         </div>
       </div>
     </section>

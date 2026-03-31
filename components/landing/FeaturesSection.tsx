@@ -1,94 +1,116 @@
-import { BarChart3, Brain, FileText, Target, TrendingUp, Users } from 'lucide-react';
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { Target, Zap, BarChart3, Shield, FileCheck, TrendingUp } from 'lucide-react';
 
 const features = [
   {
-    icon: Brain,
-    title: 'AI-Powered Analysis',
-    description: 'Advanced AI analyzes your resume against job requirements with detailed insights and recommendations.'
+    icon: Target,
+    title: 'Job Match Scoring',
+    description: 'Get a precise match score showing how well your resume aligns with specific job requirements.',
   },
   {
-    icon: Target,
-    title: 'Job Matching',
-    description: 'Get precise match scores and understand exactly how well your resume fits specific job descriptions.'
+    icon: Zap,
+    title: 'Instant Analysis',
+    description: 'Receive comprehensive feedback in under 30 seconds with our advanced AI processing.',
   },
   {
     icon: BarChart3,
-    title: 'Visual Analytics',
-    description: 'Interactive charts and graphs help you visualize your skills, experience, and areas for improvement.'
+    title: 'Detailed Metrics',
+    description: 'Track your resume performance across skills, experience, keywords, and formatting.',
+  },
+  {
+    icon: FileCheck,
+    title: 'ATS Optimization',
+    description: 'Ensure your resume passes Applicant Tracking Systems with keyword optimization.',
+  },
+  {
+    icon: Shield,
+    title: 'Privacy First',
+    description: 'Your data is encrypted and never shared. Full control over your information.',
   },
   {
     icon: TrendingUp,
-    title: 'Performance Tracking',
-    description: 'Track your resume improvements over time and see how changes impact your match scores.'
+    title: 'Actionable Insights',
+    description: 'Receive prioritized recommendations to improve your resume and boost interview chances.',
   },
-  {
-    icon: Users,
-    title: 'Industry Benchmarks',
-    description: 'Compare your resume performance against industry standards and peer averages.'
-  },
-  {
-    icon: FileText,
-    title: 'Detailed Reports',
-    description: 'Comprehensive analysis reports with actionable feedback to enhance your job applications.'
-  }
 ];
 
 export default function FeaturesSection() {
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <section className="py-16 bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 sm:text-4xl">
-            Powerful Features for Resume Success
+    <section id="features" ref={sectionRef} className="section-padding bg-muted/30">
+      <div className="section-container">
+        {/* Section Header */}
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+            Features
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+            Everything You Need to Perfect Your Resume
           </h2>
-          <p className="mt-4 text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Everything you need to optimize your resume and land your dream job
+          <p className="text-lg text-muted-foreground">
+            Our AI-powered platform provides comprehensive analysis and actionable recommendations to help you stand out to employers.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((feature, index) => {
-            const IconComponent = feature.icon;
-            return (
-              <div
-                key={index}
-                className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow duration-200"
-              >
-                <div className="flex items-center mb-4">
-                  <div className="flex-shrink-0">
-                    <div className="flex items-center justify-center h-12 w-12 rounded-md bg-blue-500 text-white">
-                      <IconComponent className="h-6 w-6" />
-                    </div>
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                      {feature.title}
-                    </h3>
-                  </div>
-                </div>
-                <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                  {feature.description}
-                </p>
+        {/* Features Grid */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {features.map((feature, index) => (
+            <div
+              key={feature.title}
+              className={`
+                feature-card
+                transition-all duration-500
+                ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
+              `}
+              style={{ transitionDelay: `${index * 100}ms` }}
+            >
+              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                <feature.icon className="w-6 h-6 text-primary" />
               </div>
-            );
-          })}
+              <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
+            </div>
+          ))}
         </div>
 
-        <div className="mt-12 text-center">
-          <div className="inline-flex items-center justify-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
-            <span className="flex items-center">
-              <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-              Free to use
-            </span>
-            <span className="flex items-center">
-              <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-              Secure & Private
-            </span>
-            <span className="flex items-center">
-              <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
-              Instant Results
-            </span>
-          </div>
+        {/* Bottom CTA */}
+        <div className={`
+          mt-16 text-center transition-all duration-700 delay-500
+          ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
+        `}>
+          <p className="text-muted-foreground mb-4">
+            Ready to see how your resume scores?
+          </p>
+          <a 
+            href="/auth/signup" 
+            className="inline-flex items-center text-primary font-medium hover:underline"
+          >
+            Start your free analysis
+            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </a>
         </div>
       </div>
     </section>

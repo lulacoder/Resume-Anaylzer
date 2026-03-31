@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from './ui';
 import Link from 'next/link';
-import { Target, Award, TrendingUp, Clock, Star } from 'lucide-react';
+import { Target, Award, TrendingUp, Clock, Star, ArrowRight, Sparkles } from 'lucide-react';
 import type { EnhancedAnalysisResult } from '../types';
 
 interface DashboardAnalysis {
@@ -12,62 +12,77 @@ interface DashboardAnalysis {
 }
 
 export function DashboardAnalysisCard({ analysis }: { analysis: DashboardAnalysis }) {
-  const formattedDate = new Date(analysis.created_at).toLocaleDateString();
+  const formattedDate = new Date(analysis.created_at).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
   const enhancedData = analysis.enhanced_analysis;
 
-  // Use enhanced data if available, otherwise fall back to legacy data
   const overallScore = enhancedData?.overall_score ?? analysis.match_score ?? 0;
   const hasEnhancedData = !!enhancedData;
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return "text-green-600 dark:text-green-400";
-    if (score >= 60) return "text-yellow-600 dark:text-yellow-400";
-    return "text-red-600 dark:text-red-400";
+    if (score >= 80) return "text-success";
+    if (score >= 60) return "text-warning";
+    return "text-destructive";
   };
 
-  const getScoreBadgeVariant = (score: number) => {
-    if (score >= 80) return "default";
-    if (score >= 60) return "secondary";
-    return "destructive";
+  const getScoreBg = (score: number) => {
+    if (score >= 80) return "bg-success";
+    if (score >= 60) return "bg-warning";
+    return "bg-destructive";
+  };
+
+  const getScoreBadgeClass = (score: number) => {
+    if (score >= 80) return "score-excellent";
+    if (score >= 60) return "score-good";
+    return "score-needs-work";
+  };
+
+  const getScoreLabel = (score: number) => {
+    if (score >= 80) return 'Excellent';
+    if (score >= 60) return 'Good';
+    return 'Needs Work';
   };
 
   return (
-    <Card className="w-full hover:shadow-lg transition-all duration-300 border-l-4 overflow-hidden" 
-         style={{ borderLeftColor: overallScore >= 80 ? '#10b981' : overallScore >= 60 ? '#f59e0b' : '#ef4444' }}>
+    <Card className="card-interactive">
       <CardHeader className="pb-3">
-        <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <CardTitle className="text-lg font-bold">
+        <div className="flex justify-between items-start gap-4">
+          <div className="flex-1 min-w-0">
+            <CardTitle className="text-lg font-semibold text-foreground truncate">
               {analysis.job_title || 'Untitled Analysis'}
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1 flex items-center">
-              <Clock className="h-3 w-3 mr-1 inline" />
-              Analyzed on {formattedDate}
+              <Clock className="h-3.5 w-3.5 mr-1.5" />
+              {formattedDate}
             </p>
-            <div className="flex flex-wrap gap-2 mt-2">
+            
+            {/* Tags */}
+            <div className="flex flex-wrap gap-2 mt-3">
               {hasEnhancedData && enhancedData.analysis_metadata.industry_detected && (
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="secondary" className="text-xs">
                   {enhancedData.analysis_metadata.industry_detected}
                 </Badge>
               )}
-            </div>
-          </div>
-          <div className="text-right">
-            <div className={`text-3xl font-bold ${getScoreColor(overallScore)}`} style={{
-              textShadow: '0 1px 2px rgba(0,0,0,0.1)'
-            }}>
-              {overallScore}%
-            </div>
-            <div className="flex flex-col gap-1 mt-1">
-              <Badge variant={getScoreBadgeVariant(overallScore)} className="text-xs">
-                {overallScore >= 80 ? 'Excellent' : overallScore >= 60 ? 'Good' : 'Needs Work'}
-              </Badge>
               {hasEnhancedData && (
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="outline" className="text-xs">
+                  <Sparkles className="w-3 h-3 mr-1" />
                   Enhanced
                 </Badge>
               )}
             </div>
+          </div>
+          
+          {/* Score display */}
+          <div className="text-right flex-shrink-0">
+            <div className={`text-3xl font-bold ${getScoreColor(overallScore)}`}>
+              {overallScore}%
+            </div>
+            <Badge className={`mt-1 ${getScoreBadgeClass(overallScore)}`}>
+              {getScoreLabel(overallScore)}
+            </Badge>
           </div>
         </div>
       </CardHeader>
@@ -75,17 +90,10 @@ export function DashboardAnalysisCard({ analysis }: { analysis: DashboardAnalysi
       <CardContent className="pt-0">
         {/* Progress Bar */}
         <div className="mb-4">
-          <div className="h-1 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
             <div 
-              className="h-full rounded-full transition-all duration-500 ease-in-out"
-              style={{ 
-                width: `${overallScore}%`, 
-                background: overallScore >= 80 
-                  ? 'linear-gradient(90deg, #10b981, #059669)' 
-                  : overallScore >= 60 
-                  ? 'linear-gradient(90deg, #f59e0b, #d97706)' 
-                  : 'linear-gradient(90deg, #ef4444, #dc2626)'
-              }}
+              className={`h-full rounded-full transition-all duration-500 ${getScoreBg(overallScore)}`}
+              style={{ width: `${overallScore}%` }}
             ></div>
           </div>
         </div>
@@ -93,22 +101,22 @@ export function DashboardAnalysisCard({ analysis }: { analysis: DashboardAnalysi
         {/* Enhanced Data Preview */}
         {hasEnhancedData && (
           <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-              <div className="p-1.5 rounded-full bg-blue-100 dark:bg-blue-900/30">
-                <Target className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Target className="h-4 w-4 text-primary" />
               </div>
-              <div className="text-xs">
-                <div className="font-medium text-sm">{enhancedData.detailed_scores.skills_match}%</div>
-                <div className="text-muted-foreground">Skills Match</div>
+              <div>
+                <div className="font-semibold text-foreground text-sm">{enhancedData.detailed_scores.skills_match}%</div>
+                <div className="text-muted-foreground text-xs">Skills Match</div>
               </div>
             </div>
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-              <div className="p-1.5 rounded-full bg-green-100 dark:bg-green-900/30">
-                <Award className="h-4 w-4 text-green-600 dark:text-green-400" />
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Award className="h-4 w-4 text-primary" />
               </div>
-              <div className="text-xs">
-                <div className="font-medium text-sm">{enhancedData.detailed_scores.experience_relevance}%</div>
-                <div className="text-muted-foreground">Experience</div>
+              <div>
+                <div className="font-semibold text-foreground text-sm">{enhancedData.detailed_scores.experience_relevance}%</div>
+                <div className="text-muted-foreground text-xs">Experience</div>
               </div>
             </div>
           </div>
@@ -116,25 +124,19 @@ export function DashboardAnalysisCard({ analysis }: { analysis: DashboardAnalysi
 
         {/* Key Insights */}
         {hasEnhancedData && (
-          <div className="mb-4 p-3 rounded-lg bg-muted/30 border border-muted">
+          <div className="mb-4 p-3 rounded-lg bg-muted/30 border border-border">
             <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <div className="p-1 rounded-full bg-yellow-100 dark:bg-yellow-900/30">
-                  <Star className="h-3 w-3 text-yellow-600 dark:text-yellow-400" />
-                </div>
-                <span>{enhancedData.present_skills.length} skills</span>
+              <div className="flex items-center gap-1.5">
+                <Star className="h-3.5 w-3.5 text-primary" />
+                <span><span className="text-foreground font-medium">{enhancedData.present_skills.length}</span> skills found</span>
               </div>
-              <div className="flex items-center gap-1">
-                <div className="p-1 rounded-full bg-purple-100 dark:bg-purple-900/30">
-                  <TrendingUp className="h-3 w-3 text-purple-600 dark:text-purple-400" />
-                </div>
-                <span>{enhancedData.priority_actions.length} actions</span>
+              <div className="flex items-center gap-1.5">
+                <TrendingUp className="h-3.5 w-3.5 text-primary" />
+                <span><span className="text-foreground font-medium">{enhancedData.priority_actions.length}</span> actions</span>
               </div>
-              <div className="flex items-center gap-1">
-                <div className="p-1 rounded-full bg-blue-100 dark:bg-blue-900/30">
-                  <Clock className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                </div>
-                <span>{enhancedData.analysis_metadata.confidence_score}% confidence</span>
+              <div className="flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5 text-primary" />
+                <span><span className="text-foreground font-medium">{enhancedData.analysis_metadata.confidence_score}%</span> confidence</span>
               </div>
             </div>
           </div>
@@ -142,13 +144,10 @@ export function DashboardAnalysisCard({ analysis }: { analysis: DashboardAnalysi
 
         {/* Action Button */}
         <div className="flex justify-end">
-          <Link href={`/analysis/${analysis.id}`} className="w-full md:w-auto">
-            <Button 
-              variant="default" 
-              size="sm" 
-              className="w-full md:w-auto shadow-sm hover:shadow-md transition-all"
-            >
+          <Link href={`/analysis/${analysis.id}`}>
+            <Button variant="outline" size="sm" className="group">
               View Details
+              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-0.5 transition-transform" />
             </Button>
           </Link>
         </div>

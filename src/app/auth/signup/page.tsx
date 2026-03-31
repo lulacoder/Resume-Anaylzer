@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { FileText, ArrowLeft, AlertCircle, CheckCircle, Zap, Target, TrendingUp, Shield } from 'lucide-react';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
@@ -13,6 +14,11 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -32,14 +38,12 @@ export default function SignupPage() {
     setError(null);
     setSuccess(null);
 
-    // Validate passwords match
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       setIsLoading(false);
       return;
     }
 
-    // Validate password strength
     if (password.length < 6) {
       setError('Password must be at least 6 characters long');
       setIsLoading(false);
@@ -66,56 +70,94 @@ export default function SignupPage() {
     }
   };
 
-
+  const benefits = [
+    { 
+      icon: Zap, 
+      title: 'AI-Powered Analysis', 
+      description: 'Get instant, detailed feedback powered by advanced AI' 
+    },
+    { 
+      icon: Target, 
+      title: 'Job Match Scoring', 
+      description: 'See how well your resume aligns with job requirements' 
+    },
+    { 
+      icon: TrendingUp, 
+      title: 'Track Progress', 
+      description: 'Monitor improvements and watch your score grow' 
+    },
+    { 
+      icon: Shield, 
+      title: 'Secure & Private', 
+      description: 'Your data is encrypted and never shared' 
+    },
+  ];
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-8 px-4 bg-gray-50">
-      <div className="w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create your account</h1>
-          <p className="text-gray-600">Get started with your resume analysis today</p>
-        </div>
+    <div className="min-h-screen flex bg-gradient-warm">
+      {/* Left side - Form */}
+      <div className="flex-1 flex flex-col justify-center py-12 px-6 sm:px-12 lg:px-16 xl:px-24">
+        <div className={`mx-auto w-full max-w-md transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          {/* Back link */}
+          <Link 
+            href="/" 
+            className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-10 group"
+          >
+            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+            <span className="text-sm font-medium">Back to home</span>
+          </Link>
 
-        {/* Sign Up Form */}
-        <div className="bg-white shadow-lg rounded-lg px-8 pt-8 pb-6 mb-6">
-          {/* Email Sign Up Form */}
-          <form onSubmit={handleSignUp} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="email">
+          {/* Header */}
+          <div className="mb-10">
+            <Link href="/" className="flex items-center gap-3 mb-8">
+              <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/25">
+                <FileText className="h-6 w-6 text-white" />
+              </div>
+              <span className="text-xl font-display font-bold text-foreground">Resume Analyzer</span>
+            </Link>
+            <h1 className="text-3xl font-display font-bold text-foreground">Create your account</h1>
+            <p className="text-muted-foreground mt-2 text-lg">Start your journey to the perfect resume</p>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSignUp} className="space-y-5">
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-sm font-medium text-foreground">
                 Email address
               </label>
               <Input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
+                placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={isLoading}
                 error={!!error}
+                className="h-12 text-base"
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="password">
+            <div className="space-y-2">
+              <label htmlFor="password" className="block text-sm font-medium text-foreground">
                 Password
               </label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Create a password"
+                placeholder="Create a strong password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={isLoading}
                 error={!!error}
+                className="h-12 text-base"
               />
-              <p className="text-xs text-gray-500 mt-1">Must be at least 6 characters long</p>
+              <p className="text-sm text-muted-foreground">Must be at least 6 characters</p>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="confirmPassword">
+            <div className="space-y-2">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-foreground">
                 Confirm password
               </label>
               <Input
@@ -127,43 +169,116 @@ export default function SignupPage() {
                 required
                 disabled={isLoading}
                 error={!!error}
+                className="h-12 text-base"
               />
             </div>
 
-            {/* Error Message */}
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
-                {error}
+              <div className="flex items-start gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive">
+                <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                <span className="text-sm font-medium">{error}</span>
               </div>
             )}
 
-            {/* Success Message */}
             {success && (
-              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md text-sm">
-                {success}
+              <div className="flex items-start gap-3 p-4 rounded-xl bg-success/10 border border-success/20 text-success">
+                <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                <span className="text-sm font-medium">{success}</span>
               </div>
             )}
 
-            {/* Submit Button */}
             <Button
               type="submit"
-              className="w-full"
+              className="w-full h-12 text-base font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all"
+              size="lg"
               loading={isLoading}
               loadingText="Creating account..."
             >
               Create account
             </Button>
-          </form>
-        </div>
 
-        {/* Sign In Link */}
-        <div className="text-center">
-          <p className="text-sm text-gray-600">
+            <p className="text-xs text-center text-muted-foreground">
+              By creating an account, you agree to our{' '}
+              <Link href="/terms" className="text-primary hover:underline">Terms of Service</Link>
+              {' '}and{' '}
+              <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>
+            </p>
+          </form>
+
+          {/* Footer */}
+          <p className="mt-8 text-center text-muted-foreground">
             Already have an account?{' '}
-            <Link href="/auth/login" className="font-medium text-blue-600 hover:text-blue-500">
+            <Link href="/auth/login" className="font-semibold text-primary hover:text-accent transition-colors">
               Sign in
             </Link>
           </p>
+        </div>
+      </div>
+
+      {/* Right side - Benefits Panel */}
+      <div className="hidden lg:flex lg:w-[45%] xl:w-[40%] relative overflow-hidden">
+        {/* Gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-bl from-accent via-primary to-rose" />
+        
+        {/* Decorative shapes */}
+        <div className="absolute top-32 right-10 w-72 h-72 rounded-full bg-white/10 blur-3xl" />
+        <div className="absolute bottom-20 left-10 w-64 h-64 rounded-full bg-white/10 blur-3xl" />
+        
+        {/* Decorative floating card */}
+        <div className={`absolute top-24 right-12 transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{ transitionDelay: '300ms' }}>
+          <div className="w-48 p-4 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 animate-float">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white text-sm font-bold">
+                JD
+              </div>
+              <div className="text-white text-sm">
+                <div className="font-semibold">Just landed!</div>
+                <div className="text-white/70 text-xs">Dream job at Stripe</div>
+              </div>
+            </div>
+            <div className="flex gap-1">
+              {[...Array(5)].map((_, i) => (
+                <svg key={i} className="w-4 h-4 text-yellow-300" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+              ))}
+            </div>
+          </div>
+        </div>
+        
+        {/* Content */}
+        <div className="relative z-10 flex flex-col justify-center px-12 xl:px-16">
+          <div className={`transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <h2 className="text-4xl xl:text-5xl font-display font-bold text-white leading-tight mb-4">
+              Everything you need<br />
+              <span className="text-white/80">to stand out</span>
+            </h2>
+            <p className="text-white/70 text-lg max-w-md mb-12">
+              Join 50,000+ professionals who've transformed their job search with our AI-powered tools.
+            </p>
+          </div>
+          
+          {/* Benefits grid */}
+          <div className="grid grid-cols-1 gap-4">
+            {benefits.map((benefit, i) => {
+              const Icon = benefit.icon;
+              return (
+                <div 
+                  key={benefit.title}
+                  className={`flex items-start gap-4 p-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 transition-all duration-500 hover:bg-white/15 ${mounted ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}
+                  style={{ transitionDelay: `${500 + i * 100}ms` }}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <Icon className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-white">{benefit.title}</div>
+                    <div className="text-white/70 text-sm">{benefit.description}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

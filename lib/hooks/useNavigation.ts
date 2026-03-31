@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 
 interface NavigationState {
@@ -11,6 +11,7 @@ interface NavigationState {
 
 export function useNavigation() {
   const pathname = usePathname();
+  const previousPathname = useRef(pathname);
   const [state, setState] = useState<NavigationState>({
     mobileMenuOpen: false,
     userMenuOpen: false,
@@ -35,11 +36,15 @@ export function useNavigation() {
   }, []);
 
   const closeAllMenus = useCallback(() => {
-    setState(prev => ({
-      ...prev,
-      mobileMenuOpen: false,
-      userMenuOpen: false,
-    }));
+    setState(prev => {
+      // Only update if menus are actually open
+      if (!prev.mobileMenuOpen && !prev.userMenuOpen) return prev;
+      return {
+        ...prev,
+        mobileMenuOpen: false,
+        userMenuOpen: false,
+      };
+    });
   }, []);
 
   const setTransitioning = useCallback((isTransitioning: boolean) => {
@@ -59,9 +64,12 @@ export function useNavigation() {
   }), [pathname]);
 
   // Close menus when pathname changes (navigation occurs)
-  useState(() => {
-    closeAllMenus();
-  });
+  useEffect(() => {
+    if (previousPathname.current !== pathname) {
+      closeAllMenus();
+      previousPathname.current = pathname;
+    }
+  }, [pathname, closeAllMenus]);
 
   return {
     ...state,
@@ -76,6 +84,28 @@ export function useNavigation() {
 // Hook for optimized theme management
 export function useTheme() {
   const [theme, setThemeState] = useState<'light' | 'dark' | 'system'>('system');
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  const applyTheme = useCallback((themeValue: 'light' | 'dark' | 'system') => {
+    if (typeof window === 'undefined') return;
+    
+    requestAnimationFrame(() => {
+      const root = document.documentElement;
+      if (themeValue === 'dark') {
+        root.classList.add('dark');
+      } else if (themeValue === 'light') {
+        root.classList.remove('dark');
+      } else {
+        // System theme
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (prefersDark) {
+          root.classList.add('dark');
+        } else {
+          root.classList.remove('dark');
+        }
+      }
+    });
+  }, []);
 
   const setTheme = useCallback((newTheme: 'light' | 'dark' | 'system') => {
     setThemeState(newTheme);
@@ -83,26 +113,9 @@ export function useTheme() {
     // Only access localStorage and DOM on client-side
     if (typeof window !== 'undefined') {
       localStorage.setItem('theme', newTheme);
-      
-      // Apply theme to document with performance optimization
-      requestAnimationFrame(() => {
-        const root = document.documentElement;
-        if (newTheme === 'dark') {
-          root.classList.add('dark');
-        } else if (newTheme === 'light') {
-          root.classList.remove('dark');
-        } else {
-          // System theme
-          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          if (prefersDark) {
-            root.classList.add('dark');
-          } else {
-            root.classList.remove('dark');
-          }
-        }
-      });
+      applyTheme(newTheme);
     }
-  }, []);
+  }, [applyTheme]);
 
   const toggleTheme = useCallback(() => {
     const newTheme = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light';
@@ -110,12 +123,14 @@ export function useTheme() {
   }, [theme, setTheme]);
 
   // Initialize theme from localStorage (client-side only)
-  useState(() => {
-    if (typeof window !== 'undefined') {
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !isInitialized) {
       const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'system' || 'system';
       setThemeState(savedTheme);
+      applyTheme(savedTheme);
+      setIsInitialized(true);
     }
-  });
+  }, [isInitialized, applyTheme]);
 
   return {
     theme,

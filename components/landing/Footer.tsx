@@ -39,49 +39,61 @@ export default function Footer() {
     { name: 'GitHub', href: '#', icon: Github }
   ];
 
+  const faqs = [
+    {
+      question: "How does the AI analysis work?",
+      answer: "Our AI analyzes your resume content against job descriptions using natural language processing to identify strengths, gaps, and improvement opportunities."
+    },
+    {
+      question: "Is my resume data secure?",
+      answer: "Yes. We use enterprise-grade encryption and follow strict privacy practices. Your resume data is processed securely and you maintain full control over your information."
+    },
+    {
+      question: "What file formats are supported?",
+      answer: "We currently support PDF files up to 10MB in size. Make sure your PDF contains selectable text for the best analysis results."
+    },
+    {
+      question: "How long does the analysis take?",
+      answer: "Most analyses complete within 30-60 seconds. The time may vary depending on resume complexity and current system load."
+    },
+    {
+      question: "Can I analyze multiple resumes?",
+      answer: "Yes! You can analyze multiple versions of your resume and compare results. Each analysis is saved to your dashboard for easy reference."
+    },
+    {
+      question: "How can I get support?",
+      answer: "You can reach our support team through the contact form or help center. We're here to help you get the most out of your resume analysis."
+    }
+  ];
+
   return (
-    <footer className="bg-gray-900 text-white">
+    <footer className="bg-muted/30 border-t border-border">
       {/* FAQ Section */}
-      <div className="border-b border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <div className="border-b border-border">
+        <div className="section-container py-16">
           <div className="text-center mb-12">
-            <h3 className="text-3xl font-bold mb-4">Frequently Asked Questions</h3>
-            <p className="text-gray-400 text-lg">Get answers to common questions about our resume analysis service</p>
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+              FAQ
+            </span>
+            <h3 className="text-2xl sm:text-3xl font-bold text-foreground mb-3">Frequently Asked Questions</h3>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              Get answers to common questions about our resume analysis service
+            </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {[
-              {
-                question: "How does the AI analysis work?",
-                answer: "Our AI analyzes your resume content against job descriptions using natural language processing to identify strengths, gaps, and improvement opportunities."
-              },
-              {
-                question: "Is my resume data secure?",
-                answer: "Yes. We use enterprise-grade encryption and follow strict privacy practices. Your resume data is processed securely and you maintain full control over your information."
-              },
-              {
-                question: "What file formats are supported?",
-                answer: "We currently support PDF files up to 10MB in size. Make sure your PDF contains selectable text for the best analysis results."
-              },
-              {
-                question: "How long does the analysis take?",
-                answer: "Most analyses complete within 30-60 seconds. The time may vary depending on resume complexity and current system load."
-              },
-              {
-                question: "Can I analyze multiple resumes?",
-                answer: "Yes! You can analyze multiple versions of your resume and compare results. Each analysis is saved to your dashboard for easy reference."
-              },
-              {
-                question: "How can I get support?",
-                answer: "You can reach our support team through the contact form or help center. We're here to help you get the most out of your resume analysis."
-              }
-            ].map((faq, index) => (
-              <div key={index} className="bg-gray-800 rounded-lg p-6">
+          <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+            {faqs.map((faq, index) => (
+              <div 
+                key={index} 
+                className="bg-card border border-border rounded-xl p-6 hover:border-primary/30 transition-colors"
+              >
                 <div className="flex items-start gap-4">
-                  <HelpCircle className="w-6 h-6 text-blue-400 flex-shrink-0 mt-1" />
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <HelpCircle className="w-5 h-5 text-primary" />
+                  </div>
                   <div>
-                    <h4 className="font-semibold text-white mb-2">{faq.question}</h4>
-                    <p className="text-gray-300 text-sm leading-relaxed">{faq.answer}</p>
+                    <h4 className="font-semibold text-foreground mb-2">{faq.question}</h4>
+                    <p className="text-muted-foreground text-sm leading-relaxed">{faq.answer}</p>
                   </div>
                 </div>
               </div>
@@ -91,29 +103,28 @@ export default function Footer() {
       </div>
 
       {/* Main Footer */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8">
+      <div className="section-container py-12">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 lg:gap-12">
           {/* Brand Section */}
-          <div className="lg:col-span-2">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg p-2">
-                <FileText className="w-8 h-8 text-white" />
+          <div className="col-span-2 md:col-span-3 lg:col-span-2">
+            <Link href="/" className="flex items-center gap-2.5 mb-4">
+              <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
+                <FileText className="h-5 w-5 text-primary-foreground" />
               </div>
-              <span className="text-2xl font-bold">Resume Analyzer</span>
-            </div>
-            <p className="text-gray-400 mb-6 leading-relaxed">
-              Empowering job seekers with AI-powered resume analysis. 
-              Get detailed feedback and insights to improve your job applications and career prospects.
+              <span className="text-lg font-semibold text-foreground">Resume Analyzer</span>
+            </Link>
+            <p className="text-muted-foreground text-sm mb-6 max-w-xs">
+              Empowering job seekers with AI-powered resume analysis. Get detailed feedback and insights to improve your job applications.
             </p>
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               {socialLinks.map((social) => (
                 <a
                   key={social.name}
                   href={social.href}
-                  className="bg-gray-800 hover:bg-gray-700 p-3 rounded-lg transition-colors"
+                  className="w-9 h-9 rounded-lg border border-border bg-card hover:bg-muted hover:border-primary/30 flex items-center justify-center transition-colors"
                   aria-label={social.name}
                 >
-                  <social.icon className="w-5 h-5" />
+                  <social.icon className="w-4 h-4 text-muted-foreground" />
                 </a>
               ))}
             </div>
@@ -121,13 +132,13 @@ export default function Footer() {
 
           {/* Product Links */}
           <div>
-            <h4 className="font-semibold text-white mb-4">Product</h4>
+            <h4 className="font-semibold text-foreground mb-4 text-sm">Product</h4>
             <ul className="space-y-3">
               {footerLinks.product.map((link) => (
                 <li key={link.name}>
                   <Link 
                     href={link.href}
-                    className="text-gray-400 hover:text-white transition-colors"
+                    className="text-muted-foreground hover:text-foreground transition-colors text-sm"
                   >
                     {link.name}
                   </Link>
@@ -138,13 +149,13 @@ export default function Footer() {
 
           {/* Company Links */}
           <div>
-            <h4 className="font-semibold text-white mb-4">Company</h4>
+            <h4 className="font-semibold text-foreground mb-4 text-sm">Company</h4>
             <ul className="space-y-3">
               {footerLinks.company.map((link) => (
                 <li key={link.name}>
                   <Link 
                     href={link.href}
-                    className="text-gray-400 hover:text-white transition-colors"
+                    className="text-muted-foreground hover:text-foreground transition-colors text-sm"
                   >
                     {link.name}
                   </Link>
@@ -155,13 +166,13 @@ export default function Footer() {
 
           {/* Support Links */}
           <div>
-            <h4 className="font-semibold text-white mb-4">Support</h4>
+            <h4 className="font-semibold text-foreground mb-4 text-sm">Support</h4>
             <ul className="space-y-3">
               {footerLinks.support.map((link) => (
                 <li key={link.name}>
                   <Link 
                     href={link.href}
-                    className="text-gray-400 hover:text-white transition-colors"
+                    className="text-muted-foreground hover:text-foreground transition-colors text-sm"
                   >
                     {link.name}
                   </Link>
@@ -172,13 +183,13 @@ export default function Footer() {
 
           {/* Legal Links */}
           <div>
-            <h4 className="font-semibold text-white mb-4">Legal</h4>
+            <h4 className="font-semibold text-foreground mb-4 text-sm">Legal</h4>
             <ul className="space-y-3">
               {footerLinks.legal.map((link) => (
                 <li key={link.name}>
                   <Link 
                     href={link.href}
-                    className="text-gray-400 hover:text-white transition-colors"
+                    className="text-muted-foreground hover:text-foreground transition-colors text-sm"
                   >
                     {link.name}
                   </Link>
@@ -188,20 +199,20 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Newsletter Signup */}
-        <div className="border-t border-gray-800 mt-12 pt-8">
+        {/* Newsletter */}
+        <div className="border-t border-border mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             <div>
-              <h4 className="font-semibold text-white mb-2">Stay Updated</h4>
-              <p className="text-gray-400">Get the latest tips and updates on resume optimization</p>
+              <h4 className="font-semibold text-foreground mb-1">Stay Updated</h4>
+              <p className="text-muted-foreground text-sm">Get the latest tips and updates on resume optimization</p>
             </div>
             <div className="flex gap-3 w-full md:w-auto">
               <input
                 type="email"
                 placeholder="Enter your email"
-                className="flex-1 md:w-64 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 md:w-64 px-4 py-2.5 bg-card border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent text-sm"
               />
-              <button className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg font-medium transition-colors whitespace-nowrap">
+              <button className="bg-primary hover:bg-primary-hover text-primary-foreground px-5 py-2.5 rounded-lg font-medium transition-colors text-sm whitespace-nowrap">
                 Subscribe
               </button>
             </div>
@@ -209,19 +220,17 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-6 text-gray-400 text-sm">
+        <div className="border-t border-border mt-8 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-6 text-muted-foreground text-sm">
             <p>&copy; {currentYear} Resume Analyzer. All rights reserved.</p>
-            <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-2">
               <Shield className="w-4 h-4" />
               <span>SOC 2 Compliant</span>
             </div>
           </div>
-          <div className="flex items-center gap-4 text-gray-400 text-sm">
-            <div className="flex items-center gap-2">
-              <Mail className="w-4 h-4" />
-              <span>support@resumeanalyzer.com</span>
-            </div>
+          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+            <Mail className="w-4 h-4" />
+            <span>support@resumeanalyzer.com</span>
           </div>
         </div>
       </div>

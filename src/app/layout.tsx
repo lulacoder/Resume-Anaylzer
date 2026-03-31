@@ -1,11 +1,24 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { DM_Sans, Outfit } from 'next/font/google';
 import './globals.css';
 import Navbar from '@/components/Navbar';
 import { PerformanceProvider } from '@/components/PerformanceProvider';
 import { OptimizedPageTransition } from '@/components/PageTransition';
 
-const inter = Inter({ subsets: ['latin'] });
+// Warm, friendly fonts for coral theme
+const dmSans = DM_Sans({ 
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-sans',
+  weight: ['400', '500', '600', '700'],
+});
+
+const outfit = Outfit({ 
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-display',
+  weight: ['400', '500', '600', '700', '800'],
+});
 
 export const metadata: Metadata = {
   title: {
@@ -50,11 +63,6 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  verification: {
-    // Add your verification codes here when you have them
-    // google: 'your-google-verification-code',
-    // yandex: 'your-yandex-verification-code',
-  },
 };
 
 export default function RootLayout({
@@ -63,8 +71,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" className={`${dmSans.variable} ${outfit.variable}`}>
+      <body className="font-sans antialiased">
         <PerformanceProvider>
           <Navbar />
           <main>

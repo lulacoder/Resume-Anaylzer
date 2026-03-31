@@ -1,185 +1,160 @@
 'use client';
 
-import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Star, Quote } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ChevronLeft, ChevronRight, Quote, Star } from 'lucide-react';
 
 const testimonials = [
   {
-    id: 1,
-    name: 'Alex M.',
-    role: 'Software Engineer',
-    company: 'Tech Company',
-    image: '/avatars/alex.jpg',
+    name: 'Sarah Chen',
+    role: 'Software Engineer at Google',
+    image: null,
+    content: "The resume analyzer helped me identify gaps I didn't even know existed. After making the suggested changes, I started getting callbacks from top tech companies within a week.",
     rating: 5,
-    content: 'The AI analysis helped me identify areas for improvement I hadn\'t considered. The feedback was detailed and actionable.',
-    metrics: {
-      interviews: 'More',
-      offers: 'Better',
-      timeToHire: 'Faster'
-    }
   },
   {
-    id: 2,
-    name: 'Jordan S.',
-    role: 'Product Manager',
-    company: 'Growing Startup',
-    image: '/avatars/jordan.jpg',
+    name: 'Michael Torres',
+    role: 'Product Manager at Meta',
+    image: null,
+    content: "I've used many resume review services, but this AI-powered tool gave me the most actionable and specific feedback. It literally helped me land my dream job.",
     rating: 5,
-    content: 'The skill analysis feature provided valuable insights into how to better position my experience for the roles I was targeting.',
-    metrics: {
-      interviews: 'Quality',
-      offers: 'Relevant',
-      timeToHire: 'Efficient'
-    }
   },
   {
-    id: 3,
-    name: 'Taylor R.',
-    role: 'Data Analyst',
-    company: 'Analytics Firm',
-    image: '/avatars/taylor.jpg',
+    name: 'Emily Johnson',
+    role: 'Marketing Director',
+    image: null,
+    content: "The match scoring feature is brilliant. I could see exactly which keywords I was missing and tailor my resume for each application. Highly recommend!",
     rating: 5,
-    content: 'The detailed feedback helped me understand how to better showcase my technical skills and project experience.',
-    metrics: {
-      interviews: 'Targeted',
-      offers: 'Improved',
-      timeToHire: 'Streamlined'
-    }
-  }
-];
-
-const stats = [
-  { label: 'AI-Powered', value: 'Analysis' },
-  { label: 'Instant', value: 'Feedback' },
-  { label: 'Detailed', value: 'Insights' },
-  { label: 'Secure', value: 'Platform' }
+  },
+  {
+    name: 'David Park',
+    role: 'Data Scientist at Amazon',
+    image: null,
+    content: "The instant feedback saved me hours of manual review. The ATS optimization tips were particularly valuable - my applications finally started getting through.",
+    rating: 5,
+  },
 ];
 
 export default function TestimonialsSection() {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
 
-  const nextTestimonial = () => {
-    setCurrentIndex((prev) => (prev + 1) % testimonials.length);
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveIndex((current) => (current + 1) % testimonials.length);
+    }, 6000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const goToNext = () => {
+    setActiveIndex((current) => (current + 1) % testimonials.length);
   };
 
-  const prevTestimonial = () => {
-    setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+  const goToPrevious = () => {
+    setActiveIndex((current) => (current - 1 + testimonials.length) % testimonials.length);
   };
-
-  const currentTestimonial = testimonials[currentIndex];
 
   return (
-    <section className="py-16 bg-white dark:bg-gray-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Stats Section */}
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 sm:text-4xl mb-4">
-            What Our Users Say
+    <section ref={sectionRef} className="section-padding bg-background">
+      <div className="section-container">
+        {/* Section Header */}
+        <div className="text-center max-w-3xl mx-auto mb-12">
+          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+            Testimonials
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+            Loved by Job Seekers Everywhere
           </h2>
-          <p className="text-lg text-gray-600 dark:text-gray-400 mb-12 max-w-2xl mx-auto">
-            See how our AI-powered resume analysis has helped job seekers improve their applications
+          <p className="text-lg text-muted-foreground">
+            See how our resume analyzer has helped thousands land their dream jobs.
           </p>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">
-                  {stat.value}
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  {stat.label}
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* Testimonial Carousel */}
-        <div className="relative max-w-4xl mx-auto">
-          <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-8 md:p-12">
-            <Quote className="h-8 w-8 text-blue-500 mb-6" />
+        <div className={`
+          max-w-4xl mx-auto transition-all duration-700
+          ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
+        `}>
+          <div className="relative bg-card border border-border rounded-2xl p-8 sm:p-12">
+            {/* Quote icon */}
+            <Quote className="w-12 h-12 text-primary/20 absolute top-8 left-8" />
             
-            <blockquote className="text-xl md:text-2xl text-gray-900 dark:text-gray-100 leading-relaxed mb-8">
-              &quot;{currentTestimonial.content}&quot;
-            </blockquote>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center mr-4">
-                  <span className="text-lg font-semibold text-gray-700 dark:text-gray-300">
-                    {currentTestimonial.name.charAt(0)}
-                  </span>
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-900 dark:text-gray-100">
-                    {currentTestimonial.name}
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    {currentTestimonial.role} at {currentTestimonial.company}
-                  </div>
-                  <div className="flex items-center mt-1">
-                    {[...Array(currentTestimonial.rating)].map((_, i) => (
-                      <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
-                    ))}
-                  </div>
-                </div>
+            {/* Testimonial content */}
+            <div className="relative z-10">
+              {/* Rating */}
+              <div className="flex items-center gap-1 mb-6">
+                {[...Array(testimonials[activeIndex].rating)].map((_, i) => (
+                  <Star key={i} className="w-5 h-5 text-warning fill-warning" />
+                ))}
               </div>
               
-              <div className="hidden md:flex items-center space-x-6 text-sm text-gray-600 dark:text-gray-400">
-                <div className="text-center">
-                  <div className="font-semibold text-gray-900 dark:text-gray-100">
-                    {currentTestimonial.metrics.interviews}
-                  </div>
-                  <div>Interviews</div>
+              {/* Quote */}
+              <blockquote className="text-xl sm:text-2xl text-foreground leading-relaxed mb-8">
+                "{testimonials[activeIndex].content}"
+              </blockquote>
+              
+              {/* Author */}
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
+                  {testimonials[activeIndex].name.charAt(0)}
                 </div>
-                <div className="text-center">
-                  <div className="font-semibold text-gray-900 dark:text-gray-100">
-                    {currentTestimonial.metrics.offers}
-                  </div>
-                  <div>Job Offers</div>
-                </div>
-                <div className="text-center">
-                  <div className="font-semibold text-gray-900 dark:text-gray-100">
-                    {currentTestimonial.metrics.timeToHire}
-                  </div>
-                  <div>Process</div>
+                <div>
+                  <div className="font-semibold text-foreground">{testimonials[activeIndex].name}</div>
+                  <div className="text-sm text-muted-foreground">{testimonials[activeIndex].role}</div>
                 </div>
               </div>
             </div>
-          </div>
-          
-          {/* Navigation */}
-          <div className="flex items-center justify-center mt-8 space-x-4">
-            <button
-              onClick={prevTestimonial}
-              className="p-2 rounded-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-              aria-label="Previous testimonial"
-            >
-              <ChevronLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-            </button>
-            
-            <div className="flex space-x-2">
-              {testimonials.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentIndex(index)}
-                  className={`w-2 h-2 rounded-full transition-colors ${
-                    index === currentIndex
-                      ? 'bg-blue-500'
-                      : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
-                  aria-label={`Go to testimonial ${index + 1}`}
-                />
-              ))}
+
+            {/* Navigation */}
+            <div className="absolute bottom-8 right-8 flex items-center gap-2">
+              <button
+                onClick={goToPrevious}
+                className="w-10 h-10 rounded-full border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors"
+                aria-label="Previous testimonial"
+              >
+                <ChevronLeft className="w-5 h-5 text-muted-foreground" />
+              </button>
+              <button
+                onClick={goToNext}
+                className="w-10 h-10 rounded-full border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors"
+                aria-label="Next testimonial"
+              >
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              </button>
             </div>
-            
-            <button
-              onClick={nextTestimonial}
-              className="p-2 rounded-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-              aria-label="Next testimonial"
-            >
-              <ChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-            </button>
+          </div>
+
+          {/* Dots indicator */}
+          <div className="flex items-center justify-center gap-2 mt-6">
+            {testimonials.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setActiveIndex(index)}
+                className={`
+                  h-2 rounded-full transition-all duration-300
+                  ${index === activeIndex ? 'w-8 bg-primary' : 'w-2 bg-border hover:bg-muted-foreground'}
+                `}
+                aria-label={`Go to testimonial ${index + 1}`}
+              />
+            ))}
           </div>
         </div>
       </div>
