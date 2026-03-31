@@ -1,6 +1,7 @@
 import { createClient } from './server';
 import { cache } from 'react';
 import { measurePerformance } from '../performance';
+import type { AnalysisChatRole, RewriteSection } from '@/types/index';
 
 /**
  * Get user's analysis history with optimized query and caching
@@ -181,3 +182,215 @@ export const getPaginatedAnalysisHistory = cache(async (
     return { data, count, page, pageSize };
   });
 });
+
+export async function getOrCreateChatSession(analysisId: string, userId: string) {
+  const supabase = await createClient();
+
+  const { data: existingSession, error: existingError } = await supabase
+    .from('analysis_chat_sessions')
+    .select('id, analysis_id, user_id, title, created_at, updated_at')
+    .eq('analysis_id', analysisId)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (existingError) {
+    throw new Error(`Failed to load chat session: ${existingError.message}`);
+  }
+
+  if (existingSession) {
+    return existingSession;
+  }
+
+  const { data: createdSession, error: createError } = await supabase
+    .from('analysis_chat_sessions')
+    .insert({
+      analysis_id: analysisId,
+      user_id: userId,
+      title: 'Resume Coach',
+    })
+    .select('id, analysis_id, user_id, title, created_at, updated_at')
+    .single();
+
+  if (createError || !createdSession) {
+    throw new Error(`Failed to create chat session: ${createError?.message || 'Unknown error'}`);
+  }
+
+  return createdSession;
+}
+
+export async function getChatMessagesBySession(sessionId: string, userId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('analysis_chat_messages')
+    .select('id, session_id, analysis_id, user_id, role, content, metadata, created_at')
+    .eq('session_id', sessionId)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    throw new Error(`Failed to fetch chat messages: ${error.message}`);
+  }
+
+  return data || [];
+}
+
+export async function createChatMessage(
+  sessionId: string,
+  analysisId: string,
+  userId: string,
+  role: AnalysisChatRole,
+  content: string,
+  metadata: Record<string, unknown> = {},
+) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('analysis_chat_messages')
+    .insert({
+      session_id: sessionId,
+      analysis_id: analysisId,
+      user_id: userId,
+      role,
+      content,
+      metadata,
+    })
+    .select('id, session_id, analysis_id, user_id, role, content, metadata, created_at')
+    .single();
+
+  if (error || !data) {
+    throw new Error(`Failed to save chat message: ${error?.message || 'Unknown error'}`);
+  }
+
+  await supabase
+    .from('analysis_chat_sessions')
+    .update({ updated_at: new Date().toISOString() })
+    .eq('id', sessionId)
+    .eq('user_id', userId);
+
+  return data;
+}
+
+export async function getLatestRewriteVersion(analysisId: string, userId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('analysis_rewrite_versions')
+    .select('id, analysis_id, user_id, version_number, sections, generation_context, created_at')
+    .eq('analysis_id', analysisId)
+    .eq('user_id', userId)
+    .order('version_number', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to fetch latest rewrite version: ${error.message}`);
+  }
+
+  return data || null;
+}
+
+export async function getRewriteVersionHistory(analysisId: string, userId: string, limit: number = 20) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('analysis_rewrite_versions')
+    .select('id, analysis_id, user_id, version_number, sections, generation_context, created_at')
+    .eq('analysis_id', analysisId)
+    .eq('user_id', userId)
+    .order('version_number', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`Failed to fetch rewrite version history: ${error.message}`);
+  }
+
+  return data || [];
+}
+
+export async function createRewriteVersion(
+  analysisId: string,
+  userId: string,
+  sections: RewriteSection[],
+  generationContext: Record<string, unknown> = {},
+) {
+  const supabase = await createClient();
+
+  const { data: latestVersion, error: latestError } = await supabase
+    .from('analysis_rewrite_versions')
+    .select('version_number')
+    .eq('analysis_id', analysisId)
+    .eq('user_id', userId)
+    .order('version_number', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (latestError) {
+    throw new Error(`Failed to resolve next rewrite version: ${latestError.message}`);
+  }
+
+  const nextVersion = (latestVersion?.version_number || 0) + 1;
+
+  const { data: createdVersion, error: createError } = await supabase
+    .from('analysis_rewrite_versions')
+    .insert({
+      analysis_id: analysisId,
+      user_id: userId,
+      version_number: nextVersion,
+      sections,
+      generation_context: generationContext,
+    })
+    .select('id, analysis_id, user_id, version_number, sections, generation_context, created_at')
+    .single();
+
+  if (createError || !createdVersion) {
+    throw new Error(`Failed to create rewrite version: ${createError?.message || 'Unknown error'}`);
+  }
+
+  const { error: legacyUpdateError } = await supabase
+    .from('analyses')
+    .update({
+      improved_sections: { sections } as unknown as never,
+    })
+    .eq('id', analysisId)
+    .eq('user_id', userId);
+
+  if (legacyUpdateError) {
+    throw new Error(`Failed to update legacy improved sections: ${legacyUpdateError.message}`);
+  }
+
+  return createdVersion;
+}
+
+export async function backfillRewriteVersionFromLegacy(analysisId: string, userId: string) {
+  const supabase = await createClient();
+  const latestVersion = await getLatestRewriteVersion(analysisId, userId);
+  if (latestVersion) {
+    return latestVersion;
+  }
+
+  const { data: analysis, error: analysisError } = await supabase
+    .from('analyses')
+    .select('improved_sections')
+    .eq('id', analysisId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (analysisError) {
+    throw new Error(`Failed to inspect legacy improved sections: ${analysisError.message}`);
+  }
+
+  const rawSections = (analysis?.improved_sections as { sections?: RewriteSection[] } | null)?.sections;
+  if (!Array.isArray(rawSections) || rawSections.length === 0) {
+    return null;
+  }
+
+  return createRewriteVersion(
+    analysisId,
+    userId,
+    rawSections,
+    { source: 'legacy-improved-sections-backfill' },
+  );
+}

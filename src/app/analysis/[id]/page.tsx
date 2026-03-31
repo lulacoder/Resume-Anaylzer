@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft, Sparkles } from 'lucide-react';
 import { getAnalysisById } from '@/lib/supabase/queries';
+import { AnalysisChatPanel } from '@/components/AnalysisChatPanel';
 
 export default async function AnalysisDetailPage({ params }: { params: Promise<{ id: string }> }) {
   // Await params in Next.js 15
@@ -28,7 +29,7 @@ export default async function AnalysisDetailPage({ params }: { params: Promise<{
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-5xl">
+    <div className="container mx-auto p-4 max-w-7xl">
       <div className="mb-6">
         <Link href="/dashboard">
           <Button variant="ghost" size="sm" className="mb-4">
@@ -68,7 +69,14 @@ export default async function AnalysisDetailPage({ params }: { params: Promise<{
         </div>
       </div>
       
-      <AnalysisResult analysis={analysis} />
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_380px] gap-6 items-start">
+        <div className="min-w-0">
+          <AnalysisResult analysis={analysis} />
+        </div>
+        <div className="xl:sticky xl:top-6">
+          <AnalysisChatPanel analysisId={id} />
+        </div>
+      </div>
     </div>
   );
 }

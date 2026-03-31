@@ -93,5 +93,43 @@ export type EnhancedAnalysisRecord = {
   enhanced_analysis?: EnhancedAnalysisResult | null;
 };
 
+export type AnalysisChatRole = 'user' | 'assistant' | 'system';
+
+export type AnalysisChatMessage = {
+  id: string;
+  session_id: string;
+  analysis_id: string;
+  user_id: string;
+  role: AnalysisChatRole;
+  content: string;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+};
+
+export type AnalysisChatSession = {
+  id: string;
+  analysis_id: string;
+  user_id: string;
+  title: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RewriteSection = {
+  title: string;
+  original: string;
+  improved: string;
+};
+
+export type AnalysisRewriteVersion = {
+  id: string;
+  analysis_id: string;
+  user_id: string;
+  version_number: number;
+  sections: RewriteSection[];
+  generation_context?: Record<string, unknown>;
+  created_at: string;
+};
+
 // UI component types
 export * from './ui';

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, Download, Sparkles } from 'lucide-react';
 import { generateResumePdf } from '@/lib/pdfGenerator';
+import type { AnalysisRewriteVersion } from '@/types/index';
 
 interface RewriteSection {
   title: string;
@@ -20,6 +21,8 @@ export default function RewritePage({ params }: { params: Promise<{ id: string }
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [versions, setVersions] = useState<AnalysisRewriteVersion[]>([]);
+  const [activeVersion, setActiveVersion] = useState<number | null>(null);
 
   useEffect(() => {
     params.then(({ id }) => setAnalysisId(id));
@@ -53,6 +56,13 @@ export default function RewritePage({ params }: { params: Promise<{ id: string }
 
         const data = await res.json();
         setSections(data.sections ?? []);
+        setActiveVersion(typeof data.version_number === 'number' ? data.version_number : null);
+
+        const chatRes = await fetch(`/api/chat?analysisId=${analysisId}`);
+        if (chatRes.ok) {
+          const chatPayload = await chatRes.json();
+          setVersions(chatPayload.versions ?? []);
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Something went wrong';
         setError(message);
@@ -121,9 +131,9 @@ export default function RewritePage({ params }: { params: Promise<{ id: string }
         <Card>
           <CardContent className="p-12 flex flex-col items-center justify-center text-center">
             <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent mb-4" />
-            <h3 className="text-lg font-medium mb-1">Rewriting your resume...</h3>
+            <h3 className="text-lg font-medium mb-1">Loading your improved resume...</h3>
             <p className="text-muted-foreground text-sm">
-              AI is analyzing your resume and generating improvements based on the job requirements.
+              Fetching your latest improved version. If none exists yet, one will be generated automatically.
             </p>
           </CardContent>
         </Card>
@@ -145,6 +155,22 @@ export default function RewritePage({ params }: { params: Promise<{ id: string }
       {/* Side-by-side comparison */}
       {!isLoading && !error && sections.length > 0 && (
         <div className="space-y-6">
+          <Card>
+            <CardContent className="p-4 flex flex-col gap-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="font-medium">Rewrite version</span>
+                <span className="text-muted-foreground">
+                  {activeVersion ? `Version ${activeVersion}` : 'Legacy version'}
+                </span>
+              </div>
+              {versions.length > 1 && (
+                <p className="text-xs text-muted-foreground">
+                  {versions.length} total versions available from chat-driven regeneration.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
           {sections.map((section, index) => (
             <Card key={index}>
               <CardContent className="p-0">

@@ -62,6 +62,9 @@ export const rateLimiter = new RateLimiter();
 export const RATE_LIMITS = {
   // Analysis endpoint - 5 requests per 10 minutes per user
   ANALYSIS: { limit: 5, windowMs: 10 * 60 * 1000 },
+
+  // Chat endpoint - 30 requests per 10 minutes per user
+  CHAT: { limit: 30, windowMs: 10 * 60 * 1000 },
   
   // Auth endpoints - 10 requests per 15 minutes per IP
   AUTH: { limit: 10, windowMs: 15 * 60 * 1000 },

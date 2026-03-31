@@ -3,6 +3,11 @@ import { generateObject } from 'ai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
+import {
+  backfillRewriteVersionFromLegacy,
+  createRewriteVersion,
+  getLatestRewriteVersion,
+} from '@/lib/supabase/queries';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -107,9 +112,15 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // If improved sections already exist, return them immediately
-  if (analysis.improved_sections) {
-    return new Response(JSON.stringify(analysis.improved_sections), {
+  // Version-first read path with lazy backfill from legacy improved_sections.
+  await backfillRewriteVersionFromLegacy(analysisId, user.id);
+  const latestVersion = await getLatestRewriteVersion(analysisId, user.id);
+  if (latestVersion) {
+    return new Response(JSON.stringify({
+      sections: latestVersion.sections,
+      version_number: latestVersion.version_number,
+      created_at: latestVersion.created_at,
+    }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -156,14 +167,20 @@ export async function POST(request: NextRequest) {
       abortSignal: AbortSignal.timeout(60000),
     });
 
-    // Persist the improved sections to the database
-    await supabase
-      .from('analyses')
-      .update({ improved_sections: object as unknown as never })
-      .eq('id', analysisId)
-      .eq('user_id', user.id);
+    const rewriteVersion = await createRewriteVersion(
+      analysisId,
+      user.id,
+      object.sections,
+      {
+        action: 'rewrite-page-generate',
+      },
+    );
 
-    return new Response(JSON.stringify(object), {
+    return new Response(JSON.stringify({
+      sections: object.sections,
+      version_number: rewriteVersion.version_number,
+      created_at: rewriteVersion.created_at,
+    }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
