@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ChevronDown, ChevronUp, TrendingUp, TrendingDown, Target, Award, BookOpen, Lightbulb, Clock, Star } from "lucide-react"
+import { ChevronDown, ChevronUp, TrendingUp, TrendingDown, Target, Award, BookOpen, Lightbulb, Clock, Star, Sparkles } from "lucide-react"
 import {
     Card,
     CardContent,
@@ -12,7 +12,9 @@ import {
     Progress,
     cn
 } from "./ui"
+import { Button } from "./ui/button"
 import type { EnhancedAnalysisResult } from "../types"
+import Link from "next/link"
 
 interface EnhancedAnalysisResultProps {
     analysis: {
@@ -594,6 +596,29 @@ export function EnhancedAnalysisResult({ analysis }: EnhancedAnalysisResultProps
                     )}
                 </div>
             </ExpandableSection>
+
+            {/* Improve Resume CTA */}
+            <Card className="border-amber-200 dark:border-amber-800 bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-950/20 dark:to-orange-950/20">
+                <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-full bg-amber-100 dark:bg-amber-900/40">
+                            <Sparkles className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div>
+                            <h3 className="font-semibold">Ready to improve your resume?</h3>
+                            <p className="text-sm text-muted-foreground">
+                                Get an AI-rewritten version based on the analysis above
+                            </p>
+                        </div>
+                    </div>
+                    <Link href={`/analysis/${analysis.id}/rewrite`}>
+                        <Button className="bg-amber-600 hover:bg-amber-700 text-white">
+                            <Sparkles className="h-4 w-4 mr-2" />
+                            Improve Resume
+                        </Button>
+                    </Link>
+                </CardContent>
+            </Card>
         </div>
     )
 }
