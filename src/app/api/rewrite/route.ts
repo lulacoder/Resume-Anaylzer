@@ -92,10 +92,10 @@ export async function POST(request: NextRequest) {
 
   const analysisId: string = body.analysisId;
 
-  // Fetch the analysis to get context
+  // Fetch the analysis — also checks for existing improved_sections
   const { data: analysis, error: analysisError } = await supabase
     .from('analyses')
-    .select('id, job_title, job_description, enhanced_analysis, resume_id, user_id')
+    .select('id, job_title, job_description, enhanced_analysis, resume_id, user_id, improved_sections')
     .eq('id', analysisId)
     .eq('user_id', user.id)
     .single();
@@ -103,6 +103,14 @@ export async function POST(request: NextRequest) {
   if (analysisError || !analysis) {
     return new Response(JSON.stringify({ error: 'Analysis not found' }), {
       status: 404,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  // If improved sections already exist, return them immediately
+  if (analysis.improved_sections) {
+    return new Response(JSON.stringify(analysis.improved_sections), {
+      status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
   }
@@ -147,6 +155,13 @@ export async function POST(request: NextRequest) {
       temperature: 0.3,
       abortSignal: AbortSignal.timeout(60000),
     });
+
+    // Persist the improved sections to the database
+    await supabase
+      .from('analyses')
+      .update({ improved_sections: object as unknown as never })
+      .eq('id', analysisId)
+      .eq('user_id', user.id);
 
     return new Response(JSON.stringify(object), {
       status: 200,

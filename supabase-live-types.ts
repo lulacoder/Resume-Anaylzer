@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           enhanced_analysis: Json | null
           id: string
+          improved_sections: Json | null
           job_description: string
           job_title: string | null
           match_score: number | null
@@ -31,6 +32,7 @@ export type Database = {
           created_at?: string
           enhanced_analysis?: Json | null
           id?: string
+          improved_sections?: Json | null
           job_description: string
           job_title?: string | null
           match_score?: number | null
@@ -42,6 +44,7 @@ export type Database = {
           created_at?: string
           enhanced_analysis?: Json | null
           id?: string
+          improved_sections?: Json | null
           job_description?: string
           job_title?: string | null
           match_score?: number | null

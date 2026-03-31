@@ -10,6 +10,7 @@ interface AnalysisData {
   match_score: number | null;
   analysis_result: unknown;
   enhanced_analysis?: EnhancedAnalysisType | null;
+  improved_sections?: { sections: Array<{ title: string; original: string; improved: string }> } | null;
 }
 
 // Helper function to safely extract array from unknown data

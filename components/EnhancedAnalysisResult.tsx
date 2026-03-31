@@ -24,6 +24,7 @@ interface EnhancedAnalysisResultProps {
         job_description?: string | null
         match_score: number | null
         enhanced_analysis?: EnhancedAnalysisResult | null
+        improved_sections?: { sections: Array<{ title: string; original: string; improved: string }> } | null
     }
 }
 
@@ -605,16 +606,20 @@ export function EnhancedAnalysisResult({ analysis }: EnhancedAnalysisResultProps
                             <Sparkles className="h-6 w-6 text-amber-600 dark:text-amber-400" />
                         </div>
                         <div>
-                            <h3 className="font-semibold">Ready to improve your resume?</h3>
+                            <h3 className="font-semibold">
+                                {analysis.improved_sections ? 'Your improved resume is ready' : 'Ready to improve your resume?'}
+                            </h3>
                             <p className="text-sm text-muted-foreground">
-                                Get an AI-rewritten version based on the analysis above
+                                {analysis.improved_sections
+                                    ? 'View the AI-improved version based on this analysis'
+                                    : 'Get an AI-rewritten version based on the analysis above'}
                             </p>
                         </div>
                     </div>
                     <Link href={`/analysis/${analysis.id}/rewrite`}>
                         <Button className="bg-amber-600 hover:bg-amber-700 text-white">
                             <Sparkles className="h-4 w-4 mr-2" />
-                            Improve Resume
+                            {analysis.improved_sections ? 'View Improved Resume' : 'Improve Resume'}
                         </Button>
                     </Link>
                 </CardContent>

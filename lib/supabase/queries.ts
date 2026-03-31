@@ -53,7 +53,8 @@ export const getAnalysisById = cache(async (analysisId: string, userId: string) 
         match_score,
         analysis_result,
         enhanced_analysis,
-        resume_id
+        resume_id,
+        improved_sections
       `)
       .eq('id', analysisId)
       .eq('user_id', userId) // Security: ensure user can only access their own analyses

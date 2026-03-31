@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS "public"."analyses" (
     "match_score" integer,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "enhanced_analysis" "jsonb",
+    "improved_sections" "jsonb",
     CONSTRAINT "analyses_match_score_check" CHECK ((("match_score" >= 0) AND ("match_score" <= 100)))
 );
 
