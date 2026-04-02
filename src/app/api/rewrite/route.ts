@@ -6,8 +6,10 @@ import { createClient } from '@/lib/supabase/server';
 import {
   backfillRewriteVersionFromLegacy,
   createRewriteVersion,
+  getCoachProfile,
   getLatestRewriteVersion,
 } from '@/lib/supabase/queries';
+import { buildRewriteGenerationPrompt } from '@/lib/coachPrompts';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -29,13 +31,13 @@ function getGoogleModel() {
   return google('gemini-2.5-flash');
 }
 
-function buildRewritePrompt(
+function buildFallbackRewritePrompt(
   resumeText: string,
   jobTitle: string | null,
   jobDescription: string | null,
   improvements: Array<{ title: string; description: string; specific_actions: string[] }>,
   missingSkills: Array<{ name: string; priority: string }>,
-): string {
+) {
   const improvementContext = improvements.length > 0
     ? `\nAnalysis-identified improvements:\n${improvements.map(i => `- ${i.title}: ${i.description}${i.specific_actions.length ? ` (Actions: ${i.specific_actions.join('; ')})` : ''}`).join('\n')}`
     : '';
@@ -150,13 +152,33 @@ export async function POST(request: NextRequest) {
     ? (enhanced.missing_skills as Array<{ name: string; priority: string }>)
     : [];
 
-  const prompt = buildRewritePrompt(
-    resume.parsed_text,
-    analysis.job_title,
-    analysis.job_description,
-    improvements,
-    missingSkills,
-  );
+  const coachProfile = await getCoachProfile(analysisId, user.id);
+  const prompt = coachProfile
+    ? `${buildRewriteGenerationPrompt({
+        jobTitle: analysis.job_title,
+        jobDescription: analysis.job_description,
+        resumeText: resume.parsed_text,
+        enhancedAnalysis: analysis.enhanced_analysis,
+        recentConversation: 'No saved conversation context provided by the rewrite page.',
+        profile: coachProfile,
+      })}
+
+Return JSON in this exact shape:
+{
+  "sections": [
+    { "title": "Professional Summary", "original": "...", "improved": "..." },
+    { "title": "Experience", "original": "...", "improved": "..." },
+    { "title": "Skills", "original": "...", "improved": "..." },
+    { "title": "Education", "original": "...", "improved": "..." }
+  ]
+}`
+    : buildFallbackRewritePrompt(
+        resume.parsed_text,
+        analysis.job_title,
+        analysis.job_description,
+        improvements,
+        missingSkills,
+      );
 
   try {
     const { object } = await generateObject({
@@ -173,6 +195,9 @@ export async function POST(request: NextRequest) {
       object.sections,
       {
         action: 'rewrite-page-generate',
+        targetRole: coachProfile?.target_role || analysis.job_title || null,
+        tone: coachProfile?.tone || null,
+        focusArea: coachProfile?.focus_area || null,
       },
     );
 

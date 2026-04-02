@@ -1,7 +1,14 @@
 import { createClient } from './server';
 import { cache } from 'react';
 import { measurePerformance } from '../performance';
-import type { AnalysisChatRole, RewriteSection } from '@/types/index';
+import type {
+  AnalysisApplicationPackage,
+  AnalysisChatRole,
+  AnalysisCoachProfile,
+  AnalysisCoachProfileInput,
+  ApplicationPackageContent,
+  RewriteSection,
+} from '@/types/index';
 
 /**
  * Get user's analysis history with optimized query and caching
@@ -220,6 +227,97 @@ export async function getOrCreateChatSession(analysisId: string, userId: string)
   return createdSession;
 }
 
+export async function getCoachProfile(analysisId: string, userId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('analysis_coach_profiles')
+    .select(`
+      id,
+      analysis_id,
+      user_id,
+      target_role,
+      target_seniority,
+      tone,
+      focus_area,
+      target_companies,
+      must_keep,
+      top_achievements,
+      career_story,
+      constraints,
+      job_search_priorities,
+      missing_details,
+      intake_status,
+      created_at,
+      updated_at
+    `)
+    .eq('analysis_id', analysisId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to fetch coach profile: ${error.message}`);
+  }
+
+  return (data as AnalysisCoachProfile | null) || null;
+}
+
+export async function upsertCoachProfile(
+  analysisId: string,
+  userId: string,
+  input: AnalysisCoachProfileInput,
+) {
+  const supabase = await createClient();
+
+  const payload = {
+    analysis_id: analysisId,
+    user_id: userId,
+    target_role: input.targetRole?.trim() || null,
+    target_seniority: input.targetSeniority?.trim() || null,
+    tone: input.tone?.trim() || null,
+    focus_area: input.focusArea?.trim() || null,
+    target_companies: input.targetCompanies || [],
+    must_keep: input.mustKeep || [],
+    top_achievements: input.topAchievements || [],
+    career_story: input.careerStory?.trim() || null,
+    constraints: input.constraints?.trim() || null,
+    job_search_priorities: input.jobSearchPriorities || [],
+    missing_details: input.missingDetails || [],
+    intake_status: input.intakeStatus || 'draft',
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabase
+    .from('analysis_coach_profiles')
+    .upsert(payload, { onConflict: 'analysis_id,user_id' })
+    .select(`
+      id,
+      analysis_id,
+      user_id,
+      target_role,
+      target_seniority,
+      tone,
+      focus_area,
+      target_companies,
+      must_keep,
+      top_achievements,
+      career_story,
+      constraints,
+      job_search_priorities,
+      missing_details,
+      intake_status,
+      created_at,
+      updated_at
+    `)
+    .single();
+
+  if (error || !data) {
+    throw new Error(`Failed to save coach profile: ${error?.message || 'Unknown error'}`);
+  }
+
+  return data as AnalysisCoachProfile;
+}
+
 export async function getChatMessagesBySession(sessionId: string, userId: string) {
   const supabase = await createClient();
 
@@ -292,6 +390,43 @@ export async function getLatestRewriteVersion(analysisId: string, userId: string
   return data || null;
 }
 
+export async function getLatestApplicationPackage(analysisId: string, userId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('analysis_application_packages')
+    .select('id, analysis_id, user_id, coach_profile_id, version_number, package_name, content, generation_context, created_at')
+    .eq('analysis_id', analysisId)
+    .eq('user_id', userId)
+    .order('version_number', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to fetch latest application package: ${error.message}`);
+  }
+
+  return (data as AnalysisApplicationPackage | null) || null;
+}
+
+export async function getApplicationPackageHistory(analysisId: string, userId: string, limit: number = 10) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('analysis_application_packages')
+    .select('id, analysis_id, user_id, coach_profile_id, version_number, package_name, content, generation_context, created_at')
+    .eq('analysis_id', analysisId)
+    .eq('user_id', userId)
+    .order('version_number', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`Failed to fetch application package history: ${error.message}`);
+  }
+
+  return (data as AnalysisApplicationPackage[] | null) || [];
+}
+
 export async function getRewriteVersionHistory(analysisId: string, userId: string, limit: number = 20) {
   const supabase = await createClient();
 
@@ -362,6 +497,52 @@ export async function createRewriteVersion(
   }
 
   return createdVersion;
+}
+
+export async function createApplicationPackage(
+  analysisId: string,
+  userId: string,
+  coachProfileId: string | null,
+  packageName: string,
+  content: ApplicationPackageContent,
+  generationContext: Record<string, unknown> = {},
+) {
+  const supabase = await createClient();
+
+  const { data: latestVersion, error: latestError } = await supabase
+    .from('analysis_application_packages')
+    .select('version_number')
+    .eq('analysis_id', analysisId)
+    .eq('user_id', userId)
+    .order('version_number', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (latestError) {
+    throw new Error(`Failed to resolve next application package version: ${latestError.message}`);
+  }
+
+  const nextVersion = (latestVersion?.version_number || 0) + 1;
+
+  const { data, error } = await supabase
+    .from('analysis_application_packages')
+    .insert({
+      analysis_id: analysisId,
+      user_id: userId,
+      coach_profile_id: coachProfileId,
+      version_number: nextVersion,
+      package_name: packageName,
+      content,
+      generation_context: generationContext,
+    })
+    .select('id, analysis_id, user_id, coach_profile_id, version_number, package_name, content, generation_context, created_at')
+    .single();
+
+  if (error || !data) {
+    throw new Error(`Failed to create application package: ${error?.message || 'Unknown error'}`);
+  }
+
+  return data as AnalysisApplicationPackage;
 }
 
 export async function backfillRewriteVersionFromLegacy(analysisId: string, userId: string) {

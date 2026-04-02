@@ -115,6 +115,70 @@ export type AnalysisChatSession = {
   updated_at: string;
 };
 
+export type AnalysisCoachProfile = {
+  id: string;
+  analysis_id: string;
+  user_id: string;
+  target_role: string | null;
+  target_seniority: string | null;
+  tone: string | null;
+  focus_area: string | null;
+  target_companies: string[];
+  must_keep: string[];
+  top_achievements: string[];
+  career_story: string | null;
+  constraints: string | null;
+  job_search_priorities: string[];
+  missing_details: string[];
+  intake_status: 'draft' | 'ready';
+  created_at: string;
+  updated_at: string;
+};
+
+export type AnalysisCoachProfileInput = {
+  targetRole?: string;
+  targetSeniority?: string;
+  tone?: string;
+  focusArea?: string;
+  targetCompanies?: string[];
+  mustKeep?: string[];
+  topAchievements?: string[];
+  careerStory?: string;
+  constraints?: string;
+  jobSearchPriorities?: string[];
+  missingDetails?: string[];
+  intakeStatus?: 'draft' | 'ready';
+};
+
+export type ApplicationPackageContent = {
+  package_name: string;
+  positioning_summary: string;
+  recruiter_pitch: string;
+  cover_letter: string;
+  linkedin_headline: string;
+  linkedin_about: string;
+  interview_story: string;
+  ats_keywords: string[];
+  truth_guardrails: string[];
+  follow_up_questions: string[];
+  evidence_map: Array<{
+    claim: string;
+    source: 'resume' | 'analysis' | 'chat' | 'intake';
+  }>;
+};
+
+export type AnalysisApplicationPackage = {
+  id: string;
+  analysis_id: string;
+  user_id: string;
+  coach_profile_id: string | null;
+  version_number: number;
+  package_name: string;
+  content: ApplicationPackageContent;
+  generation_context?: Record<string, unknown>;
+  created_at: string;
+};
+
 export type RewriteSection = {
   title: string;
   original: string;

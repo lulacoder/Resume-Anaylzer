@@ -5,13 +5,23 @@ import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import {
   backfillRewriteVersionFromLegacy,
+  createApplicationPackage,
   createChatMessage,
   createRewriteVersion,
+  getApplicationPackageHistory,
   getChatMessagesBySession,
+  getCoachProfile,
   getOrCreateChatSession,
   getRewriteVersionHistory,
+  upsertCoachProfile,
 } from '@/lib/supabase/queries';
 import { rateLimiter, RATE_LIMITS } from '@/lib/rate-limiting';
+import {
+  buildApplicationPackagePrompt,
+  buildCoachConversationPrompt,
+  buildRewriteGenerationPrompt,
+  getApplicationPackageJsonShape,
+} from '@/lib/coachPrompts';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -20,15 +30,31 @@ const QuerySchema = z.object({
   analysisId: z.string().uuid('A valid analysisId is required.'),
 });
 
+const CoachProfileSchema = z.object({
+  targetRole: z.string().trim().max(160).optional(),
+  targetSeniority: z.string().trim().max(120).optional(),
+  tone: z.string().trim().max(120).optional(),
+  focusArea: z.string().trim().max(180).optional(),
+  targetCompanies: z.array(z.string().trim().min(1).max(120)).max(10).optional(),
+  mustKeep: z.array(z.string().trim().min(1).max(180)).max(10).optional(),
+  topAchievements: z.array(z.string().trim().min(1).max(240)).max(12).optional(),
+  careerStory: z.string().trim().max(3000).optional(),
+  constraints: z.string().trim().max(3000).optional(),
+  jobSearchPriorities: z.array(z.string().trim().min(1).max(180)).max(10).optional(),
+  missingDetails: z.array(z.string().trim().min(1).max(180)).max(12).optional(),
+  intakeStatus: z.enum(['draft', 'ready']).optional(),
+});
+
 const PostSchema = z.object({
   analysisId: z.string().uuid('A valid analysisId is required.'),
   message: z.string().trim().min(1, 'Message is required.').max(5000).optional(),
-  action: z.enum(['chat', 'regenerate']).default('chat'),
+  action: z.enum(['chat', 'regenerate', 'save_profile', 'generate_package']).default('chat'),
   preferences: z.object({
     tone: z.string().trim().min(1).optional(),
     focusArea: z.string().trim().min(1).optional(),
     seniority: z.string().trim().min(1).optional(),
   }).optional(),
+  profile: CoachProfileSchema.optional(),
 });
 
 const RewriteSectionSchema = z.object({
@@ -36,6 +62,23 @@ const RewriteSectionSchema = z.object({
     title: z.string(),
     original: z.string(),
     improved: z.string(),
+  })),
+});
+
+const ApplicationPackageSchema = z.object({
+  package_name: z.string(),
+  positioning_summary: z.string(),
+  recruiter_pitch: z.string(),
+  cover_letter: z.string(),
+  linkedin_headline: z.string(),
+  linkedin_about: z.string(),
+  interview_story: z.string(),
+  ats_keywords: z.array(z.string()),
+  truth_guardrails: z.array(z.string()),
+  follow_up_questions: z.array(z.string()),
+  evidence_map: z.array(z.object({
+    claim: z.string(),
+    source: z.enum(['resume', 'analysis', 'chat', 'intake']),
   })),
 });
 
@@ -90,101 +133,41 @@ async function getAnalysisContext(analysisId: string, userId: string) {
   };
 }
 
-function buildCoachPrompt(
-  jobTitle: string | null,
-  jobDescription: string | null,
-  resumeText: string,
-  enhancedAnalysis: unknown,
-  userMessage: string,
-  recentConversation: string,
-) {
-  const MAX_RESUME_CHARS = 14000;
-  const resumeContext = resumeText.length > MAX_RESUME_CHARS
-    ? `${resumeText.slice(0, MAX_RESUME_CHARS)}\n\n[Resume text truncated for context length]`
-    : resumeText;
-
-  const analysisContext = enhancedAnalysis
-    ? JSON.stringify(enhancedAnalysis)
-    : 'No enhanced analysis available.';
-
-  return `You are an expert resume coach. Keep responses concise, practical, and encouraging.
-
-Rules:
-1. Give specific improvement advice tied to resume outcomes.
-2. Never suggest fabricating achievements, skills, or credentials.
-3. If user asks to regenerate full resume, ask clarifying questions first if tone/focus/seniority are missing.
-4. Prefer bullet points for action steps.
-5. Base your advice on the actual resume content provided below.
-
-Target role: ${jobTitle || 'Not provided'}
-Job description:\n${jobDescription || 'Not provided'}
-
-Current resume text:\n${resumeContext}
-
-Current analysis context:\n${analysisContext}
-
-Recent conversation:\n${recentConversation || 'No previous messages'}
-
-User message:\n${userMessage}`;
+function normalizeList(values?: string[]) {
+  return (values || []).map((value) => value.trim()).filter(Boolean);
 }
 
-function buildRewritePrompt({
-  resumeText,
-  jobTitle,
-  jobDescription,
-  enhancedAnalysis,
-  recentConversation,
-  userGuidance,
-  tone,
-  focusArea,
-  seniority,
-}: {
-  resumeText: string;
-  jobTitle: string | null;
-  jobDescription: string | null;
-  enhancedAnalysis: unknown;
-  recentConversation: string;
-  userGuidance?: string;
-  tone: string;
-  focusArea: string;
-  seniority: string;
-}) {
-  const analysisContext = enhancedAnalysis
-    ? JSON.stringify(enhancedAnalysis)
-    : 'No enhanced analysis available.';
+function buildIntakeChecklist(profile: Awaited<ReturnType<typeof getCoachProfile>>) {
+  const checklist: string[] = [];
 
-  return `You are an expert resume writer. Rewrite the following resume to be ATS-friendly and aligned with the target job.
+  if (!profile?.target_role) checklist.push('Set the target role you want this resume to win.');
+  if (!profile?.target_seniority) checklist.push('Choose the seniority level you want the resume to signal.');
+  if (!profile?.focus_area) checklist.push('Pick the primary focus area for rewriting.');
+  if (!profile?.top_achievements?.length) checklist.push('Add 2-3 achievements you most want recruiters to notice.');
+  if (!profile?.career_story) checklist.push('Describe the career story or positioning you want the resume to tell.');
+  if (!profile?.job_search_priorities?.length) checklist.push('State what matters most in this search, like remote roles, startups, or senior growth.');
 
-Target role: ${jobTitle || 'Not provided'}
-Target seniority: ${seniority}
-Tone/style: ${tone}
-Primary focus area: ${focusArea}
-${jobDescription ? `Job description:\n${jobDescription}` : ''}
-Analysis context:\n${analysisContext}
-Recent coaching conversation:\n${recentConversation || 'No previous conversation'}
-${userGuidance ? `User guidance:\n${userGuidance}` : ''}
+  return checklist;
+}
 
-Rules:
-1. Break the resume into logical sections (Professional Summary, Experience, Skills, Education, etc.)
-2. For each section, provide the ORIGINAL text and IMPROVED text.
-3. Use strong action verbs and quantified outcomes when evidence exists.
-4. Keep the improved text realistic. Do not fabricate credentials, companies, roles, dates, or metrics.
-5. Incorporate useful keywords from the job description and analysis where supported by the actual resume.
-6. Output a complete, polished resume draft that can be exported directly to PDF.
-7. Return valid JSON only.
+async function loadCoachPayload(analysisId: string, userId: string) {
+  const session = await getOrCreateChatSession(analysisId, userId);
+  const [messages, coachProfile, rewriteVersions, packageVersions] = await Promise.all([
+    getChatMessagesBySession(session.id, userId),
+    getCoachProfile(analysisId, userId),
+    getRewriteVersionHistory(analysisId, userId, 20),
+    getApplicationPackageHistory(analysisId, userId, 10),
+  ]);
 
-Original resume text:
----
-${resumeText}
----
-
-Return JSON in this shape:
-{
-  "sections": [
-    { "title": "Professional Summary", "original": "...", "improved": "..." },
-    { "title": "Experience", "original": "...", "improved": "..." }
-  ]
-}`;
+  return {
+    session,
+    messages,
+    coachProfile,
+    intakeChecklist: buildIntakeChecklist(coachProfile),
+    versions: rewriteVersions,
+    packageVersions,
+    latestPackage: packageVersions[0] || null,
+  };
 }
 
 export async function GET(request: NextRequest) {
@@ -210,14 +193,10 @@ export async function GET(request: NextRequest) {
 
   try {
     await getAnalysisContext(parseResult.data.analysisId, user.id);
-    const session = await getOrCreateChatSession(parseResult.data.analysisId, user.id);
-    const messages = await getChatMessagesBySession(session.id, user.id);
-
-    // Backfill rewrite versions from legacy improved_sections if needed.
     await backfillRewriteVersionFromLegacy(parseResult.data.analysisId, user.id);
-    const versions = await getRewriteVersionHistory(parseResult.data.analysisId, user.id, 20);
+    const payload = await loadCoachPayload(parseResult.data.analysisId, user.id);
 
-    return new Response(JSON.stringify({ session, messages, versions }), {
+    return new Response(JSON.stringify(payload), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -269,29 +248,121 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const { analysisId, action, message, preferences } = parseResult.data;
+  const { analysisId, action, message, preferences, profile } = parseResult.data;
 
   try {
     const { analysis, resumeText } = await getAnalysisContext(analysisId, user.id);
     const session = await getOrCreateChatSession(analysisId, user.id);
 
+    let coachProfile = await getCoachProfile(analysisId, user.id);
+
+    if (profile || preferences) {
+      coachProfile = await upsertCoachProfile(analysisId, user.id, {
+        targetRole: profile?.targetRole ?? coachProfile?.target_role ?? analysis.job_title ?? undefined,
+        targetSeniority: profile?.targetSeniority ?? preferences?.seniority ?? coachProfile?.target_seniority ?? undefined,
+        tone: profile?.tone ?? preferences?.tone ?? coachProfile?.tone ?? undefined,
+        focusArea: profile?.focusArea ?? preferences?.focusArea ?? coachProfile?.focus_area ?? undefined,
+        targetCompanies: normalizeList(profile?.targetCompanies ?? coachProfile?.target_companies),
+        mustKeep: normalizeList(profile?.mustKeep ?? coachProfile?.must_keep),
+        topAchievements: normalizeList(profile?.topAchievements ?? coachProfile?.top_achievements),
+        careerStory: profile?.careerStory ?? coachProfile?.career_story ?? undefined,
+        constraints: profile?.constraints ?? coachProfile?.constraints ?? undefined,
+        jobSearchPriorities: normalizeList(profile?.jobSearchPriorities ?? coachProfile?.job_search_priorities),
+        missingDetails: normalizeList(profile?.missingDetails ?? coachProfile?.missing_details),
+        intakeStatus: profile?.intakeStatus ?? coachProfile?.intake_status ?? 'draft',
+      });
+    }
+
+    if (action === 'save_profile') {
+      if (!coachProfile) {
+        coachProfile = await upsertCoachProfile(analysisId, user.id, {
+          targetRole: analysis.job_title ?? undefined,
+          intakeStatus: 'draft',
+        });
+      }
+
+      const payload = await loadCoachPayload(analysisId, user.id);
+      return new Response(JSON.stringify({ saved: true, ...payload }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     if (message) {
       await createChatMessage(session.id, analysisId, user.id, 'user', message);
     }
 
-    if (action === 'regenerate') {
-      const existingMessages = await getChatMessagesBySession(session.id, user.id);
-      const recentConversation = existingMessages
-        .slice(-12)
-        .map((entry) => `${entry.role}: ${entry.content}`)
-        .join('\n');
+    const existingMessages = await getChatMessagesBySession(session.id, user.id);
+    const recentConversation = existingMessages
+      .slice(-12)
+      .map((entry) => `${entry.role}: ${entry.content}`)
+      .join('\n');
 
-      const tone = preferences?.tone;
-      const focusArea = preferences?.focusArea;
-      const seniority = preferences?.seniority;
+    if (action === 'generate_package') {
+      const prompt = `${buildApplicationPackagePrompt({
+        jobTitle: analysis.job_title,
+        jobDescription: analysis.job_description,
+        resumeText,
+        enhancedAnalysis: analysis.enhanced_analysis,
+        recentConversation,
+        profile: coachProfile,
+      })}
+
+${getApplicationPackageJsonShape()}`;
+
+      const { object } = await generateObject({
+        model: getGoogleModel(),
+        schema: ApplicationPackageSchema,
+        prompt,
+        temperature: 0.35,
+        abortSignal: AbortSignal.timeout(60000),
+      });
+
+      const applicationPackage = await createApplicationPackage(
+        analysisId,
+        user.id,
+        coachProfile?.id || null,
+        object.package_name,
+        object,
+        {
+          action: 'generate-package',
+          targetRole: coachProfile?.target_role || analysis.job_title || null,
+          tone: coachProfile?.tone || preferences?.tone || null,
+          focusArea: coachProfile?.focus_area || preferences?.focusArea || null,
+        },
+      );
+
+      const assistantMessage = await createChatMessage(
+        session.id,
+        analysisId,
+        user.id,
+        'assistant',
+        `I generated application package version ${applicationPackage.version_number}. Review the recruiter pitch, cover letter, LinkedIn copy, and interview story in the coach workspace.`,
+        {
+          action: 'generate_package',
+          packageVersionId: applicationPackage.id,
+          versionNumber: applicationPackage.version_number,
+        },
+      );
+
+      const payload = await loadCoachPayload(analysisId, user.id);
+      return new Response(JSON.stringify({
+        assistant: assistantMessage,
+        generatedPackage: applicationPackage,
+        ...payload,
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (action === 'regenerate') {
+      const tone = coachProfile?.tone || preferences?.tone;
+      const focusArea = coachProfile?.focus_area || preferences?.focusArea;
+      const seniority = coachProfile?.target_seniority || preferences?.seniority;
 
       if (!tone || !focusArea || !seniority) {
-        const clarification = 'Before I regenerate, please provide your preferred tone, focus area, and target seniority so I can tailor the rewrite correctly.';
+        const clarification = 'Before I generate the full resume, save your target seniority, tone, and focus area in the coach intake so I can tailor the rewrite properly.';
         const assistantMessage = await createChatMessage(
           session.id,
           analysisId,
@@ -308,33 +379,39 @@ export async function POST(request: NextRequest) {
           },
         );
 
-        const messages = await getChatMessagesBySession(session.id, user.id);
+        const payload = await loadCoachPayload(analysisId, user.id);
         return new Response(JSON.stringify({
           assistant: assistantMessage,
-          messages,
           requiresClarification: true,
+          ...payload,
         }), {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
         });
       }
 
-      const prompt = buildRewritePrompt({
-        resumeText,
+      const rewritePrompt = `${buildRewriteGenerationPrompt({
         jobTitle: analysis.job_title,
         jobDescription: analysis.job_description,
+        resumeText,
         enhancedAnalysis: analysis.enhanced_analysis,
         recentConversation,
+        profile: coachProfile,
         userGuidance: message,
-        tone,
-        focusArea,
-        seniority,
-      });
+      })}
+
+Return JSON in this shape:
+{
+  "sections": [
+    { "title": "Professional Summary", "original": "...", "improved": "..." },
+    { "title": "Experience", "original": "...", "improved": "..." }
+  ]
+}`;
 
       const { object } = await generateObject({
         model: getGoogleModel(),
         schema: RewriteSectionSchema,
-        prompt,
+        prompt: rewritePrompt,
         temperature: 0.25,
         abortSignal: AbortSignal.timeout(60000),
       });
@@ -348,58 +425,50 @@ export async function POST(request: NextRequest) {
           tone,
           focusArea,
           seniority,
+          targetRole: coachProfile?.target_role || analysis.job_title || null,
           instruction: message || null,
         },
       );
 
-      const summary = `Done. I generated version ${version.version_number} with a ${tone} tone focused on ${focusArea} for ${seniority} level targeting.`;
       const assistantMessage = await createChatMessage(
         session.id,
         analysisId,
         user.id,
         'assistant',
-        summary,
+        `Done. I generated rewrite version ${version.version_number} with a ${tone} tone, ${focusArea} focus, and ${seniority} positioning.`,
         {
           action: 'regenerate',
-          versionNumber: version.version_number,
           rewriteVersionId: version.id,
+          versionNumber: version.version_number,
         },
       );
 
-      const messages = await getChatMessagesBySession(session.id, user.id);
-      const versions = await getRewriteVersionHistory(analysisId, user.id, 20);
-
+      const payload = await loadCoachPayload(analysisId, user.id);
       return new Response(JSON.stringify({
         assistant: assistantMessage,
-        messages,
-        versions,
         regenerated: true,
         latestVersion: version,
+        ...payload,
       }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    const existingMessages = await getChatMessagesBySession(session.id, user.id);
-    const recentConversation = existingMessages
-      .slice(-8)
-      .map((entry) => `${entry.role}: ${entry.content}`)
-      .join('\n');
-
-    const coachPrompt = buildCoachPrompt(
-      analysis.job_title,
-      analysis.job_description,
+    const coachPrompt = buildCoachConversationPrompt({
+      jobTitle: analysis.job_title,
+      jobDescription: analysis.job_description,
       resumeText,
-      analysis.enhanced_analysis,
-      message || 'Give me actionable resume advice based on this analysis.',
+      enhancedAnalysis: analysis.enhanced_analysis,
       recentConversation,
-    );
+      profile: coachProfile,
+      userMessage: message || 'Coach me on how to improve this resume for the target role.',
+    });
 
     const { text } = await generateText({
       model: getGoogleModel(),
       prompt: coachPrompt,
-      temperature: 0.4,
+      temperature: 0.45,
       abortSignal: AbortSignal.timeout(60000),
     });
 
@@ -412,9 +481,8 @@ export async function POST(request: NextRequest) {
       { action: 'chat' },
     );
 
-    const messages = await getChatMessagesBySession(session.id, user.id);
-
-    return new Response(JSON.stringify({ assistant: assistantMessage, messages }), {
+    const payload = await loadCoachPayload(analysisId, user.id);
+    return new Response(JSON.stringify({ assistant: assistantMessage, ...payload }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });

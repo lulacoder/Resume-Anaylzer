@@ -61,6 +61,57 @@ export type Database = {
           },
         ]
       }
+      analysis_application_packages: {
+        Row: {
+          analysis_id: string
+          coach_profile_id: string | null
+          content: Json
+          created_at: string
+          generation_context: Json
+          id: string
+          package_name: string
+          user_id: string
+          version_number: number
+        }
+        Insert: {
+          analysis_id: string
+          coach_profile_id?: string | null
+          content?: Json
+          created_at?: string
+          generation_context?: Json
+          id?: string
+          package_name?: string
+          user_id: string
+          version_number: number
+        }
+        Update: {
+          analysis_id?: string
+          coach_profile_id?: string | null
+          content?: Json
+          created_at?: string
+          generation_context?: Json
+          id?: string
+          package_name?: string
+          user_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_application_packages_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analyses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analysis_application_packages_coach_profile_id_fkey"
+            columns: ["coach_profile_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_coach_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analysis_chat_messages: {
         Row: {
           analysis_id: string
@@ -137,6 +188,74 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "analysis_chat_sessions_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analyses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      analysis_coach_profiles: {
+        Row: {
+          analysis_id: string
+          career_story: string | null
+          constraints: string | null
+          created_at: string
+          focus_area: string | null
+          id: string
+          intake_status: string
+          job_search_priorities: Json
+          missing_details: Json
+          must_keep: Json
+          target_companies: Json
+          target_role: string | null
+          target_seniority: string | null
+          tone: string | null
+          top_achievements: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          analysis_id: string
+          career_story?: string | null
+          constraints?: string | null
+          created_at?: string
+          focus_area?: string | null
+          id?: string
+          intake_status?: string
+          job_search_priorities?: Json
+          missing_details?: Json
+          must_keep?: Json
+          target_companies?: Json
+          target_role?: string | null
+          target_seniority?: string | null
+          tone?: string | null
+          top_achievements?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          analysis_id?: string
+          career_story?: string | null
+          constraints?: string | null
+          created_at?: string
+          focus_area?: string | null
+          id?: string
+          intake_status?: string
+          job_search_priorities?: Json
+          missing_details?: Json
+          must_keep?: Json
+          target_companies?: Json
+          target_role?: string | null
+          target_seniority?: string | null
+          tone?: string | null
+          top_achievements?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_coach_profiles_analysis_id_fkey"
             columns: ["analysis_id"]
             isOneToOne: false
             referencedRelation: "analyses"
