@@ -132,6 +132,8 @@ function buildRewritePrompt({
   resumeText,
   jobTitle,
   jobDescription,
+  enhancedAnalysis,
+  recentConversation,
   userGuidance,
   tone,
   focusArea,
@@ -140,11 +142,17 @@ function buildRewritePrompt({
   resumeText: string;
   jobTitle: string | null;
   jobDescription: string | null;
+  enhancedAnalysis: unknown;
+  recentConversation: string;
   userGuidance?: string;
   tone: string;
   focusArea: string;
   seniority: string;
 }) {
+  const analysisContext = enhancedAnalysis
+    ? JSON.stringify(enhancedAnalysis)
+    : 'No enhanced analysis available.';
+
   return `You are an expert resume writer. Rewrite the following resume to be ATS-friendly and aligned with the target job.
 
 Target role: ${jobTitle || 'Not provided'}
@@ -152,6 +160,8 @@ Target seniority: ${seniority}
 Tone/style: ${tone}
 Primary focus area: ${focusArea}
 ${jobDescription ? `Job description:\n${jobDescription}` : ''}
+Analysis context:\n${analysisContext}
+Recent coaching conversation:\n${recentConversation || 'No previous conversation'}
 ${userGuidance ? `User guidance:\n${userGuidance}` : ''}
 
 Rules:
@@ -159,7 +169,9 @@ Rules:
 2. For each section, provide the ORIGINAL text and IMPROVED text.
 3. Use strong action verbs and quantified outcomes when evidence exists.
 4. Keep the improved text realistic. Do not fabricate credentials, companies, roles, dates, or metrics.
-5. Return valid JSON only.
+5. Incorporate useful keywords from the job description and analysis where supported by the actual resume.
+6. Output a complete, polished resume draft that can be exported directly to PDF.
+7. Return valid JSON only.
 
 Original resume text:
 ---
@@ -268,6 +280,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === 'regenerate') {
+      const existingMessages = await getChatMessagesBySession(session.id, user.id);
+      const recentConversation = existingMessages
+        .slice(-12)
+        .map((entry) => `${entry.role}: ${entry.content}`)
+        .join('\n');
+
       const tone = preferences?.tone;
       const focusArea = preferences?.focusArea;
       const seniority = preferences?.seniority;
@@ -305,6 +323,8 @@ export async function POST(request: NextRequest) {
         resumeText,
         jobTitle: analysis.job_title,
         jobDescription: analysis.job_description,
+        enhancedAnalysis: analysis.enhanced_analysis,
+        recentConversation,
         userGuidance: message,
         tone,
         focusArea,

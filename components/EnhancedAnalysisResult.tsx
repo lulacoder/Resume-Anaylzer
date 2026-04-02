@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ChevronDown, ChevronUp, TrendingUp, TrendingDown, Target, Award, BookOpen, Lightbulb, Clock, Star, Sparkles } from "lucide-react"
+import { ChevronDown, ChevronUp, TrendingUp, TrendingDown, Target, Award, BookOpen, Lightbulb, Clock, Star, Sparkles, Bot } from "lucide-react"
 import {
     Card,
     CardContent,
@@ -71,7 +71,7 @@ function ScoreCard({
 
     return (
         <Card variant="outlined" className={`p-4 ${getVariantStyles()}`}>
-            <div className="flex items-center gap-3">
+            <div className="flex items-start gap-3 sm:items-center">
                 <div className={`p-2 rounded-lg ${variant === "primary" ? "bg-blue-100 dark:bg-blue-900/30" :
                         variant === "success" ? "bg-green-100 dark:bg-green-900/30" :
                             variant === "warning" ? "bg-yellow-100 dark:bg-yellow-900/30" :
@@ -85,8 +85,8 @@ function ScoreCard({
                                         "text-primary"
                         }`} />
                 </div>
-                <div className="flex-1">
-                    <div className="flex items-center justify-between">
+                <div className="min-w-0 flex-1">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <h4 className="font-medium text-sm">{title}</h4>
                         <span className={cn("font-bold text-lg", getScoreColor(score))}>
                             {score}%
@@ -129,13 +129,13 @@ function ExpandableSection({
             <CardHeader className="pb-3">
                 <button
                     onClick={() => setIsExpanded(!isExpanded)}
-                    className="flex items-center justify-between w-full text-left hover:opacity-80 transition-opacity"
+                    className="flex w-full items-start justify-between gap-3 text-left transition-opacity hover:opacity-80"
                 >
-                    <div className="flex items-center gap-2">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2 pr-2">
                         {Icon && <Icon className="h-4 w-4 text-primary" />}
-                        <CardTitle className="text-base">{title}</CardTitle>
+                        <CardTitle className="text-base leading-snug">{title}</CardTitle>
                         {badge && (
-                            <Badge variant="secondary" className="ml-2">
+                            <Badge variant="secondary" className="max-w-full whitespace-normal break-words text-left">
                                 {badge}
                             </Badge>
                         )}
@@ -195,19 +195,24 @@ function SkillsVisualization({
                 </h4>
                 <div className="grid gap-2">
                     {presentSkills.map((skill, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 rounded-lg border bg-card">
-                            <div className="flex items-center gap-2">
+                        <div
+                            key={index}
+                            className="flex flex-col gap-3 rounded-2xl border bg-card px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                            <div className="flex min-w-0 flex-wrap items-center gap-2">
                                 <Badge className={getCategoryColor(skill.category)}>
                                     {skill.category}
                                 </Badge>
-                                <span className="font-medium">{skill.name}</span>
+                                <span className="min-w-0 break-words font-medium leading-snug">
+                                    {skill.name}
+                                </span>
                                 {skill.proficiency && getProficiencyIcon(skill.proficiency)}
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="grid gap-1 sm:justify-items-end">
                                 <div className="text-xs text-muted-foreground">
                                     Importance: {skill.importance}/10
                                 </div>
-                                <div className="w-16">
+                                <div className="w-full sm:w-20">
                                     <Progress value={skill.importance * 10} className="h-1" />
                                 </div>
                             </div>
@@ -225,12 +230,17 @@ function SkillsVisualization({
                     </h4>
                     <div className="grid gap-2">
                         {missingSkills.map((skill, index) => (
-                            <div key={index} className="flex items-center justify-between p-3 rounded-lg border bg-card border-red-200 dark:border-red-800">
-                                <div className="flex items-center gap-2">
+                            <div
+                                key={index}
+                                className="flex flex-col gap-3 rounded-2xl border border-red-200 bg-card px-4 py-4 dark:border-red-800 sm:flex-row sm:items-center sm:justify-between"
+                            >
+                                <div className="flex min-w-0 flex-wrap items-center gap-2">
                                     <Badge className={getCategoryColor(skill.category)}>
                                         {skill.category}
                                     </Badge>
-                                    <span className="font-medium">{skill.name}</span>
+                                    <span className="min-w-0 break-words font-medium leading-snug">
+                                        {skill.name}
+                                    </span>
                                     <Badge
                                         variant={skill.priority === 'high' ? 'destructive' : skill.priority === 'medium' ? 'default' : 'secondary'}
                                         className="text-xs"
@@ -238,11 +248,11 @@ function SkillsVisualization({
                                         {skill.priority}
                                     </Badge>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="grid gap-1 sm:justify-items-end">
                                     <div className="text-xs text-muted-foreground">
                                         Importance: {skill.importance}/10
                                     </div>
-                                    <div className="w-16">
+                                    <div className="w-full sm:w-20">
                                         <Progress value={skill.importance * 10} className="h-1" />
                                     </div>
                                 </div>
@@ -274,10 +284,10 @@ function PriorityActions({ actions }: { actions: EnhancedAnalysisResult['priorit
                 <Card key={index} variant="outlined" className="p-4">
                     <div className="flex items-start gap-3">
                         {getCategoryIcon(action.category)}
-                        <div className="flex-1">
-                            <div className="flex items-center justify-between mb-2">
+                        <div className="min-w-0 flex-1">
+                            <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <h4 className="font-medium">{action.title}</h4>
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-wrap items-center gap-2">
                                     <Badge variant="secondary" className="text-xs">
                                         Priority: {action.priority}/10
                                     </Badge>
@@ -332,7 +342,7 @@ export function EnhancedAnalysisResult({ analysis }: EnhancedAnalysisResultProps
                     </div>
 
                     {/* Overall Score */}
-                    <div className="flex items-center gap-4 p-4 rounded-lg bg-primary/5 border">
+                    <div className="flex flex-col gap-4 rounded-lg border bg-primary/5 p-4 sm:flex-row sm:items-center">
                         <div className="text-center">
                             <div className="text-3xl font-bold text-primary">
                                 {enhancedData.overall_score}%
@@ -398,7 +408,7 @@ export function EnhancedAnalysisResult({ analysis }: EnhancedAnalysisResultProps
                 badge={`${enhancedData.experience_analysis.relevant_years || 0} relevant years`}
             >
                 <div className="space-y-4">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
                         <div className="text-center p-3 rounded-lg bg-muted">
                             <div className="text-lg font-bold">{enhancedData.experience_analysis.total_years || 0}</div>
                             <div className="text-xs text-muted-foreground">Total Years</div>
@@ -616,12 +626,20 @@ export function EnhancedAnalysisResult({ analysis }: EnhancedAnalysisResultProps
                             </p>
                         </div>
                     </div>
-                    <Link href={`/analysis/${analysis.id}/rewrite`}>
-                        <Button className="bg-amber-600 hover:bg-amber-700 text-white">
-                            <Sparkles className="h-4 w-4 mr-2" />
-                            {analysis.improved_sections ? 'View Improved Resume' : 'Improve Resume'}
-                        </Button>
-                    </Link>
+                    <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+                        <Link href={`/analysis/${analysis.id}/coach`} className="w-full sm:w-auto">
+                            <Button variant="outline" className="w-full border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-950">
+                                <Bot className="h-4 w-4 mr-2" />
+                                Open AI Coach
+                            </Button>
+                        </Link>
+                        <Link href={`/analysis/${analysis.id}/rewrite`} className="w-full sm:w-auto">
+                            <Button className="w-full bg-amber-600 hover:bg-amber-700 text-white">
+                                <Sparkles className="h-4 w-4 mr-2" />
+                                {analysis.improved_sections ? 'View Improved Resume' : 'Improve Resume'}
+                            </Button>
+                        </Link>
+                    </div>
                 </CardContent>
             </Card>
         </div>

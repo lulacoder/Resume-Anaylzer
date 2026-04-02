@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, Badge } from '@/components/ui';
 import type { AnalysisChatMessage, AnalysisRewriteVersion } from '@/types/index';
-import { MessageSquare, Send, Sparkles, RefreshCcw, Bot, User, Loader2 } from 'lucide-react';
+import { MessageSquare, Send, Sparkles, RefreshCcw, Bot, User, Loader2, FileText, WandSparkles } from 'lucide-react';
 
 type ChatResponse = {
   messages?: AnalysisChatMessage[];
@@ -14,7 +14,7 @@ type ChatResponse = {
   requiresClarification?: boolean;
 };
 
-const DEFAULT_PROMPT = 'Help me improve this resume for better ATS performance.';
+const DEFAULT_PROMPT = 'Help me turn this into a stronger, truthful resume for this role.';
 const QUICK_PROMPT_CHOICES = [
   'Give me the top 3 improvements with the highest impact on this specific resume.',
   'Rewrite my professional summary to match this role while staying truthful.',
@@ -124,37 +124,75 @@ export function AnalysisChatPanel({ analysisId }: { analysisId: string }) {
   };
 
   return (
-    <Card className="border-amber-200 dark:border-amber-800 overflow-hidden">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <MessageSquare className="h-4 w-4 text-amber-600" />
-            Resume Coach Chat
-          </CardTitle>
-          <Badge variant="secondary">Persistent</Badge>
+    <Card className="overflow-hidden border-amber-200 bg-gradient-to-b from-amber-50/90 via-background to-background dark:border-amber-800 dark:from-amber-950/20">
+      <CardHeader className="pb-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-100 dark:bg-amber-900/40 dark:text-amber-300">
+                AI workspace
+              </Badge>
+              <Badge variant="outline">Persistent context</Badge>
+            </div>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <MessageSquare className="h-5 w-5 text-amber-600" />
+              Resume Coach Chat
+            </CardTitle>
+            <p className="max-w-2xl text-sm text-muted-foreground">
+              Every reply uses your resume text, the job description, and the analysis context. When you are happy with the guidance, generate a full rewritten version.
+            </p>
+          </div>
+          <Link href={`/analysis/${analysisId}/rewrite`} className="w-full sm:w-auto">
+            <Button variant="outline" className="w-full border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-950">
+              <FileText className="h-4 w-4 mr-2" />
+              Open Rewrite Page
+            </Button>
+          </Link>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5">
         {isLoading ? (
-          <div className="py-8 flex items-center justify-center text-sm text-muted-foreground gap-2">
+          <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
             Loading conversation...
           </div>
         ) : (
           <>
-            <div className="max-h-96 overflow-y-auto space-y-3 pr-1">
+            <div className="grid gap-3 rounded-2xl border border-amber-200/70 bg-background/80 p-3 dark:border-amber-900/60">
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="rounded-2xl border bg-card px-4 py-3">
+                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                    Tone
+                  </div>
+                  <div className="mt-1 text-sm font-medium">{tone}</div>
+                </div>
+                <div className="rounded-2xl border bg-card px-4 py-3">
+                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                    Focus
+                  </div>
+                  <div className="mt-1 text-sm font-medium">{focusArea}</div>
+                </div>
+                <div className="rounded-2xl border bg-card px-4 py-3">
+                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                    Seniority
+                  </div>
+                  <div className="mt-1 text-sm font-medium">{seniority}</div>
+                </div>
+              </div>
+
+              <div className="max-h-[32rem] space-y-3 overflow-y-auto pr-1">
               {messages.length === 0 && (
-                <div className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
-                  Start by asking for targeted improvements, then regenerate a tailored full resume version.
+                <div className="rounded-2xl border border-dashed p-4 text-sm text-muted-foreground">
+                  Start by asking for targeted improvements, then generate a tailored full resume draft once the coaching direction feels right.
                 </div>
               )}
 
               {messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`rounded-lg p-3 text-sm ${message.role === 'user'
-                    ? 'bg-primary/10 border border-primary/20'
-                    : 'bg-muted border border-border'
+                  className={`rounded-2xl p-4 text-sm shadow-sm ${message.role === 'user'
+                    ? 'border border-primary/20 bg-primary/10'
+                    : 'border border-border bg-muted/70'
                     }`}
                 >
                   <div className="font-medium mb-1 flex items-center gap-1.5 text-xs uppercase tracking-wide text-muted-foreground">
@@ -168,6 +206,7 @@ export function AnalysisChatPanel({ analysisId }: { analysisId: string }) {
                   <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
                 </div>
               ))}
+            </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -198,7 +237,7 @@ export function AnalysisChatPanel({ analysisId }: { analysisId: string }) {
             </div>
 
             <textarea
-              rows={4}
+              rows={5}
               value={input}
               onChange={(event) => {
                 const nextValue = event.target.value;
@@ -213,17 +252,17 @@ export function AnalysisChatPanel({ analysisId }: { analysisId: string }) {
                 }
               }}
               placeholder={DEFAULT_PROMPT}
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none"
+              className="min-h-[144px] w-full resize-none rounded-2xl border border-input bg-background px-4 py-3 text-sm"
             />
 
             {showPromptChoices && (
-              <div className="flex flex-wrap gap-2">
+              <div className="grid gap-2 md:grid-cols-2">
                 {QUICK_PROMPT_CHOICES.map((choice) => (
                   <button
                     key={choice}
                     type="button"
                     onClick={() => handleChoiceClick(choice)}
-                    className="text-left text-xs px-2.5 py-1.5 rounded-full border border-border bg-background hover:bg-muted transition-colors"
+                    className="rounded-2xl border border-border bg-background px-4 py-3 text-left text-sm transition-colors hover:bg-muted"
                   >
                     {choice}
                   </button>
@@ -237,29 +276,29 @@ export function AnalysisChatPanel({ analysisId }: { analysisId: string }) {
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <Button
                 onClick={() => submitMessage('chat')}
                 disabled={!canSend}
-                className="sm:flex-1 min-w-0"
+                className="min-w-0 sm:flex-1"
               >
                 {isSending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
-                Send Message
+                Ask Coach
               </Button>
 
               <Button
                 variant="outline"
                 onClick={() => submitMessage('regenerate')}
                 disabled={isSending}
-                className="sm:flex-1 min-w-0 border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-950"
+                className="min-w-0 border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-950 sm:flex-1"
               >
-                {isSending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCcw className="h-4 w-4 mr-2" />}
-                Regenerate Resume
+                {isSending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <WandSparkles className="h-4 w-4 mr-2" />}
+                Generate Full Resume
               </Button>
             </div>
 
-            <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
-              <div className="flex items-center justify-between gap-2">
+            <div className="space-y-3 rounded-2xl border bg-muted/40 p-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-sm font-medium flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-amber-600" />
                   Rewrite Versions
@@ -274,8 +313,8 @@ export function AnalysisChatPanel({ analysisId }: { analysisId: string }) {
               ) : (
                 <div className="space-y-1.5">
                   {versions.slice(0, 5).map((version) => (
-                    <div key={version.id} className="flex items-center justify-between text-xs rounded border bg-background px-2.5 py-2">
-                      <span>Version {version.version_number}</span>
+                    <div key={version.id} className="flex flex-col gap-1 rounded-xl border bg-background px-3 py-3 text-xs sm:flex-row sm:items-center sm:justify-between">
+                      <span className="font-medium">Version {version.version_number}</span>
                       <span className="text-muted-foreground">{new Date(version.created_at).toLocaleString()}</span>
                     </div>
                   ))}
@@ -283,8 +322,9 @@ export function AnalysisChatPanel({ analysisId }: { analysisId: string }) {
               )}
 
               <Link href={`/analysis/${analysisId}/rewrite`}>
-                <Button variant="outline" size="sm" className="w-full mt-1">
-                  View Rewrite Page
+                <Button variant="outline" size="sm" className="mt-1 w-full">
+                  <RefreshCcw className="h-4 w-4 mr-2" />
+                  View Latest Rewrite
                 </Button>
               </Link>
             </div>
