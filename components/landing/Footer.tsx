@@ -1,6 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
 import { Mail, Twitter, Linkedin, Github, FileText, Shield, HelpCircle } from 'lucide-react';
 
 export default function Footer() {
@@ -200,27 +203,29 @@ export default function Footer() {
         </div>
 
         {/* Newsletter */}
-        <div className="border-t border-border mt-12 pt-8">
+        <Separator className="mt-12" />
+        <div className="pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             <div>
               <h4 className="font-semibold text-foreground mb-1">Stay Updated</h4>
               <p className="text-muted-foreground text-sm">Get the latest tips and updates on resume optimization</p>
             </div>
             <div className="flex gap-3 w-full md:w-auto">
-              <input
+              <Input
                 type="email"
                 placeholder="Enter your email"
-                className="flex-1 md:w-64 px-4 py-2.5 bg-card border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent text-sm"
+                className="flex-1 md:w-64"
               />
-              <button className="bg-primary hover:bg-primary-hover text-primary-foreground px-5 py-2.5 rounded-lg font-medium transition-colors text-sm whitespace-nowrap">
+              <Button className="whitespace-nowrap">
                 Subscribe
-              </button>
+              </Button>
             </div>
           </div>
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-border mt-8 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+        <Separator className="mt-8" />
+        <div className="pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-6 text-muted-foreground text-sm">
             <p>&copy; {currentYear} Resume Analyzer. All rights reserved.</p>
             <div className="hidden sm:flex items-center gap-2">

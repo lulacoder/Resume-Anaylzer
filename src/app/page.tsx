@@ -1,4 +1,6 @@
 import { Suspense } from 'react';
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
 import HeroSection from '@/components/landing/HeroSection';
 import {
   DynamicFeaturesSection,
@@ -8,7 +10,14 @@ import {
   LoadingSpinner,
 } from '@/lib/dynamic-imports';
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (user) {
+    redirect('/dashboard');
+  }
+
   return (
     <div className="min-h-screen">
       {/* Hero section loads immediately for above-the-fold content */}

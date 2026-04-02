@@ -90,16 +90,16 @@ function LegacyAnalysisResult({ analysis }: { analysis: AnalysisData }) {
           </div>
           
           {/* Progress bar */}
-          <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mb-6">
+          <div className="w-full h-2 bg-muted rounded-full overflow-hidden mb-6">
             <div 
               className="h-full rounded-full transition-all duration-500 ease-in-out"
               style={{ 
                 width: `${matchScore}%`, 
                 background: matchScore >= 80 
-                  ? 'linear-gradient(90deg, #10b981, #059669)' 
+                  ? 'linear-gradient(90deg, oklch(0.6 0.16 155), oklch(0.55 0.16 155))' 
                   : matchScore >= 60 
-                  ? 'linear-gradient(90deg, #f59e0b, #d97706)' 
-                  : 'linear-gradient(90deg, #ef4444, #dc2626)'
+                  ? 'linear-gradient(90deg, oklch(0.75 0.15 75), oklch(0.7 0.15 75))' 
+                  : 'linear-gradient(90deg, oklch(0.55 0.25 25), oklch(0.5 0.25 25))'
               }}
             ></div>
           </div>
@@ -107,11 +107,11 @@ function LegacyAnalysisResult({ analysis }: { analysis: AnalysisData }) {
       </Card>
       
       {/* Strengths Card */}
-      <Card className="border-l-4 border-l-green-500">
+      <Card className="border-l-4 border-l-success">
         <CardContent className="p-6">
           <h3 className="text-xl font-bold mb-4 flex items-center">
-            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 mr-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-600 dark:text-green-400">
+            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-success/10 mr-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-success">
                 <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
               </svg>
             </span>
@@ -121,7 +121,7 @@ function LegacyAnalysisResult({ analysis }: { analysis: AnalysisData }) {
             {strengths.length > 0 ? (
               strengths.map((s, i) => (
                 <li key={i} className="flex items-start">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-600 dark:text-green-400 mr-2 mt-1 flex-shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-success mr-2 mt-1 flex-shrink-0">
                     <path d="M20 6 9 17l-5-5"/>
                   </svg>
                   <span>{s}</span>
@@ -135,11 +135,11 @@ function LegacyAnalysisResult({ analysis }: { analysis: AnalysisData }) {
       </Card>
       
       {/* Weaknesses Card */}
-      <Card className="border-l-4 border-l-amber-500">
+      <Card className="border-l-4 border-l-warning">
         <CardContent className="p-6">
           <h3 className="text-xl font-bold mb-4 flex items-center">
-            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 mr-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-600 dark:text-amber-400">
+            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-warning/10 mr-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-warning">
                 <path d="M12 9v4M12 17h.01"/>
                 <path d="M3.58 5.96A2 2 0 0 1 5.32 4h13.36a2 2 0 0 1 1.74 1.96l.77 12.42a2 2 0 0 1-2 2.12H4.81a2 2 0 0 1-2-2.12Z"/>
               </svg>
@@ -150,7 +150,7 @@ function LegacyAnalysisResult({ analysis }: { analysis: AnalysisData }) {
             {weaknesses.length > 0 ? (
               weaknesses.map((w, i) => (
                 <li key={i} className="flex items-start">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-600 dark:text-amber-400 mr-2 mt-1 flex-shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-warning mr-2 mt-1 flex-shrink-0">
                     <path d="M12 9v4M12 17h.01"/>
                     <circle cx="12" cy="12" r="10"/>
                   </svg>
@@ -165,11 +165,11 @@ function LegacyAnalysisResult({ analysis }: { analysis: AnalysisData }) {
       </Card>
       
       {/* Suggestions Card */}
-      <Card className="border-l-4 border-l-blue-500">
+      <Card className="border-l-4 border-l-primary">
         <CardContent className="p-6">
           <h3 className="text-xl font-bold mb-4 flex items-center">
-            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 mr-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600 dark:text-blue-400">
+            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 mr-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
                 <circle cx="12" cy="12" r="10"/>
                 <path d="m15 9-6 6M9 9l6 6"/>
               </svg>
@@ -180,7 +180,7 @@ function LegacyAnalysisResult({ analysis }: { analysis: AnalysisData }) {
             {suggestions.length > 0 ? (
               suggestions.map((s, i) => (
                 <li key={i} className="flex items-start">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600 dark:text-blue-400 mr-2 mt-1 flex-shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary mr-2 mt-1 flex-shrink-0">
                     <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
                   </svg>
                   <span>{s}</span>
@@ -195,11 +195,11 @@ function LegacyAnalysisResult({ analysis }: { analysis: AnalysisData }) {
       
       {/* Skills Card */}
       {extractedSkills.length > 0 && (
-        <Card className="border-l-4 border-l-purple-500">
+        <Card className="border-l-4 border-l-accent">
           <CardContent className="p-6">
             <h3 className="text-xl font-bold mb-4 flex items-center">
-              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 mr-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-600 dark:text-purple-400">
+              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-accent/10 mr-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent-foreground">
                   <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
                 </svg>
               </span>
@@ -207,7 +207,7 @@ function LegacyAnalysisResult({ analysis }: { analysis: AnalysisData }) {
             </h3>
             <div className="flex flex-wrap gap-2">
               {extractedSkills.map((skill, i) => (
-                <span key={i} className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full text-sm">
+                <span key={i} className="px-3 py-1 bg-accent/10 text-accent-foreground rounded-full text-sm">
                   {skill}
                 </span>
               ))}

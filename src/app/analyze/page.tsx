@@ -3,6 +3,9 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { DynamicAnalysisResult } from '@/lib/dynamic-imports';
 import { useRef, useState, Suspense } from 'react';
 import { AnalysisSpinner } from '@/components/ui/spinner';
@@ -256,9 +259,7 @@ export default function AnalyzePage() {
             <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
               {/* File Upload Area */}
               <div className="space-y-2">
-                <label htmlFor="resume" className="form-label">
-                  Upload Resume
-                </label>
+                <Label htmlFor="resume">Upload Resume</Label>
                 <div
                   className={`
                     relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 cursor-pointer
@@ -310,18 +311,17 @@ export default function AnalyzePage() {
                 </div>
                 
                 {fileError && (
-                  <div className="flex items-center text-destructive text-sm mt-2">
-                    <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
-                    {fileError}
-                  </div>
+                  <Alert variant="destructive" className="mt-2">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{fileError}</AlertDescription>
+                  </Alert>
                 )}
               </div>
 
               {/* Job Title */}
               <div className="space-y-2">
-                <label htmlFor="jobTitle" className="form-label">
-                  Job Title
-                </label>
+                <Label htmlFor="jobTitle">Job Title</Label>
                 <Input
                   id="jobTitle"
                   name="jobTitle"
@@ -334,20 +334,15 @@ export default function AnalyzePage() {
 
               {/* Job Description */}
               <div className="space-y-2">
-                <label htmlFor="jobDescription" className="form-label">
-                  Job Description
-                </label>
-                <div className="relative">
-                  <textarea
-                    id="jobDescription"
-                    name="jobDescription"
-                    rows={8}
-                    placeholder="Paste the job description here..."
-                    className="w-full rounded-lg border border-input bg-background px-4 py-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
-                    required
-                    disabled={isSubmitting}
-                  ></textarea>
-                </div>
+                <Label htmlFor="jobDescription">Job Description</Label>
+                <Textarea
+                  id="jobDescription"
+                  name="jobDescription"
+                  rows={8}
+                  placeholder="Paste the job description here..."
+                  required
+                  disabled={isSubmitting}
+                />
               </div>
 
               {/* Submit Button */}
@@ -418,20 +413,23 @@ export default function AnalyzePage() {
 
         {/* Success Message */}
         <SlideUpTransition show={!!message}>
-          <div className="mt-6 max-w-3xl mx-auto alert-success flex items-start gap-3">
-            <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-            <span className="text-sm font-medium">{message}</span>
+          <div className="mt-6 max-w-3xl mx-auto">
+            <Alert className="border-success/20 bg-success/10">
+              <CheckCircle className="h-4 w-4 text-success" />
+              <AlertTitle className="text-success">Success</AlertTitle>
+              <AlertDescription className="text-success/90">{message}</AlertDescription>
+            </Alert>
           </div>
         </SlideUpTransition>
 
         {/* Error Message */}
         <SlideUpTransition show={!!error}>
-          <div className="mt-6 max-w-3xl mx-auto alert-error flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-            <div>
-              <span className="text-sm font-medium">Analysis Error</span>
-              <p className="text-sm mt-1 opacity-90">{error}</p>
-            </div>
+          <div className="mt-6 max-w-3xl mx-auto">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Analysis Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           </div>
         </SlideUpTransition>
 

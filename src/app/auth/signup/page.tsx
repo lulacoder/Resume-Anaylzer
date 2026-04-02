@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { FileText, ArrowLeft, AlertCircle, CheckCircle, Zap, Target, TrendingUp, Shield } from 'lucide-react';
 
 export default function SignupPage() {
@@ -20,7 +22,6 @@ export default function SignupPage() {
     setMounted(true);
   }, []);
 
-  // Redirect if already logged in
   useEffect(() => {
     const checkExistingSession = async () => {
       const supabase = createClient();
@@ -98,7 +99,6 @@ export default function SignupPage() {
       {/* Left side - Form */}
       <div className="flex-1 flex flex-col justify-center py-12 px-6 sm:px-12 lg:px-16 xl:px-24">
         <div className={`mx-auto w-full max-w-md transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          {/* Back link */}
           <Link 
             href="/" 
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-10 group"
@@ -107,7 +107,6 @@ export default function SignupPage() {
             <span className="text-sm font-medium">Back to home</span>
           </Link>
 
-          {/* Header */}
           <div className="mb-10">
             <Link href="/" className="flex items-center gap-3 mb-8">
               <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/25">
@@ -119,12 +118,9 @@ export default function SignupPage() {
             <p className="text-muted-foreground mt-2 text-lg">Start your journey to the perfect resume</p>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSignUp} className="space-y-5">
             <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium text-foreground">
-                Email address
-              </label>
+              <Label htmlFor="email">Email address</Label>
               <Input
                 id="email"
                 type="email"
@@ -133,15 +129,12 @@ export default function SignupPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={isLoading}
-                error={!!error}
                 className="h-12 text-base"
               />
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="password" className="block text-sm font-medium text-foreground">
-                Password
-              </label>
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -150,16 +143,13 @@ export default function SignupPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={isLoading}
-                error={!!error}
                 className="h-12 text-base"
               />
               <p className="text-sm text-muted-foreground">Must be at least 6 characters</p>
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-foreground">
-                Confirm password
-              </label>
+              <Label htmlFor="confirmPassword">Confirm password</Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -168,23 +158,24 @@ export default function SignupPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 disabled={isLoading}
-                error={!!error}
                 className="h-12 text-base"
               />
             </div>
 
             {error && (
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive">
-                <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                <span className="text-sm font-medium">{error}</span>
-              </div>
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
 
             {success && (
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-success/10 border border-success/20 text-success">
-                <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                <span className="text-sm font-medium">{success}</span>
-              </div>
+              <Alert className="border-success/20 bg-success/10">
+                <CheckCircle className="h-4 w-4 text-success" />
+                <AlertTitle className="text-success">Success</AlertTitle>
+                <AlertDescription className="text-success/90">{success}</AlertDescription>
+              </Alert>
             )}
 
             <Button
@@ -205,7 +196,6 @@ export default function SignupPage() {
             </p>
           </form>
 
-          {/* Footer */}
           <p className="mt-8 text-center text-muted-foreground">
             Already have an account?{' '}
             <Link href="/auth/login" className="font-semibold text-primary hover:text-accent transition-colors">
@@ -217,14 +207,11 @@ export default function SignupPage() {
 
       {/* Right side - Benefits Panel */}
       <div className="hidden lg:flex lg:w-[45%] xl:w-[40%] relative overflow-hidden">
-        {/* Gradient background */}
         <div className="absolute inset-0 bg-gradient-to-bl from-accent via-primary to-rose" />
         
-        {/* Decorative shapes */}
         <div className="absolute top-32 right-10 w-72 h-72 rounded-full bg-white/10 blur-3xl" />
         <div className="absolute bottom-20 left-10 w-64 h-64 rounded-full bg-white/10 blur-3xl" />
         
-        {/* Decorative floating card */}
         <div className={`absolute top-24 right-12 transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{ transitionDelay: '300ms' }}>
           <div className="w-48 p-4 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 animate-float">
             <div className="flex items-center gap-3 mb-3">
@@ -246,7 +233,6 @@ export default function SignupPage() {
           </div>
         </div>
         
-        {/* Content */}
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-16">
           <div className={`transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             <h2 className="text-4xl xl:text-5xl font-display font-bold text-white leading-tight mb-4">
@@ -254,11 +240,10 @@ export default function SignupPage() {
               <span className="text-white/80">to stand out</span>
             </h2>
             <p className="text-white/70 text-lg max-w-md mb-12">
-              Join 50,000+ professionals who've transformed their job search with our AI-powered tools.
+              Join 50,000+ professionals who&apos;ve transformed their job search with our AI-powered tools.
             </p>
           </div>
           
-          {/* Benefits grid */}
           <div className="grid grid-cols-1 gap-4">
             {benefits.map((benefit, i) => {
               const Icon = benefit.icon;

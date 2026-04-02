@@ -207,24 +207,6 @@
   .feature-card {
     @apply bg-card border border-border rounded-xl p-6 transition-all duration-200 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5;
   }
-  
-  /* Form styles */
-  .form-label {
-    @apply block text-sm font-medium text-foreground mb-1.5;
-  }
-  
-  /* Alert styles */
-  .alert-success {
-    @apply bg-success/10 border border-success/20 text-success rounded-lg p-4;
-  }
-  
-  .alert-error {
-    @apply bg-destructive/10 border border-destructive/20 text-destructive rounded-lg p-4;
-  }
-  
-  .alert-warning {
-    @apply bg-warning/10 border border-warning/20 text-warning rounded-lg p-4;
-  }
 }
 
 @layer utilities {

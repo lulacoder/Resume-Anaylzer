@@ -13,14 +13,19 @@ export const createClient = async () => {
           return cookieStore.get(name)?.value;
         },
         set(name: string, value: string, options: CookieOptions) {
-          cookieStore.set({ name, value, ...options });
+          try {
+            cookieStore.set({ name, value, ...options });
+          } catch {
+            // Cookies can only be modified in Server Actions or Route Handlers.
+            // This error is expected when called from Server Components or middleware
+            // during token refresh. Silently ignore it.
+          }
         },
         remove(name: string) {
           try {
             cookieStore.delete(name);
-          } catch (error) {
-            // Silently handle cookie deletion errors in non-server contexts
-            console.warn('Cookie deletion failed:', error);
+          } catch {
+            // Same as above - ignore if called outside a mutable context.
           }
         },
       },

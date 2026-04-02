@@ -13,6 +13,7 @@ import {
     cn
 } from "./ui"
 import { Button } from "./ui/button"
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "./ui/collapsible"
 import type { EnhancedAnalysisResult } from "../types"
 import Link from "next/link"
 
@@ -108,7 +109,7 @@ function ScoreCard({
     )
 }
 
-// Expandable section component
+// Expandable section component using shadcn Collapsible
 function ExpandableSection({
     title,
     children,
@@ -122,37 +123,36 @@ function ExpandableSection({
     icon?: React.ComponentType<{ className?: string }>
     badge?: string | number
 }) {
-    const [isExpanded, setIsExpanded] = React.useState(defaultExpanded)
+    const [isOpen, setIsOpen] = React.useState(defaultExpanded)
 
     return (
-        <Card variant="outlined">
-            <CardHeader className="pb-3">
-                <button
-                    onClick={() => setIsExpanded(!isExpanded)}
-                    className="flex w-full items-start justify-between gap-3 text-left transition-opacity hover:opacity-80"
-                >
-                    <div className="flex min-w-0 flex-wrap items-center gap-2 pr-2">
-                        {Icon && <Icon className="h-4 w-4 text-primary" />}
-                        <CardTitle className="text-base leading-snug">{title}</CardTitle>
-                        {badge && (
-                            <Badge variant="secondary" className="max-w-full whitespace-normal break-words text-left">
-                                {badge}
-                            </Badge>
+        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+            <Card variant="outlined">
+                <CardHeader className="pb-3">
+                    <CollapsibleTrigger className="flex w-full items-start justify-between gap-3 text-left transition-opacity hover:opacity-80 cursor-pointer">
+                        <div className="flex min-w-0 flex-wrap items-center gap-2 pr-2">
+                            {Icon && <Icon className="h-4 w-4 text-primary" />}
+                            <CardTitle className="text-base leading-snug">{title}</CardTitle>
+                            {badge && (
+                                <Badge variant="secondary" className="max-w-full whitespace-normal break-words text-left">
+                                    {badge}
+                                </Badge>
+                            )}
+                        </div>
+                        {isOpen ? (
+                            <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
                         )}
-                    </div>
-                    {isExpanded ? (
-                        <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                    )}
-                </button>
-            </CardHeader>
-            {isExpanded && (
-                <CardContent className="pt-0">
-                    {children}
-                </CardContent>
-            )}
-        </Card>
+                    </CollapsibleTrigger>
+                </CardHeader>
+                <CollapsibleContent>
+                    <CardContent className="pt-0">
+                        {children}
+                    </CardContent>
+                </CollapsibleContent>
+            </Card>
+        </Collapsible>
     )
 }
 

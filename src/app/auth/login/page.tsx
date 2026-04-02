@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
 import { handleAuthError, signInWithRetry } from '@/lib/auth-error-handler';
 import { FileText, ArrowLeft, AlertCircle, Sparkles, Check } from 'lucide-react';
 
@@ -19,7 +22,6 @@ export default function LoginPage() {
     setMounted(true);
   }, []);
 
-  // Redirect if already logged in
   useEffect(() => {
     const checkExistingSession = async () => {
       const supabase = createClient();
@@ -59,15 +61,12 @@ export default function LoginPage() {
     <div className="min-h-screen flex bg-gradient-warm">
       {/* Left side - Decorative Panel */}
       <div className="hidden lg:flex lg:w-[45%] xl:w-[40%] relative overflow-hidden">
-        {/* Gradient background */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary via-accent to-rose" />
         
-        {/* Decorative shapes */}
         <div className="absolute top-20 left-10 w-64 h-64 rounded-full bg-white/10 blur-3xl" />
         <div className="absolute bottom-32 right-10 w-80 h-80 rounded-full bg-white/10 blur-3xl" />
-        <div className="absolute top-1/2 left-1/4 w-40 h-40 rounded-full bg-white/5 blur-2xl" />
+        <div className="absolute top-1/2 left-1/4 w-40 w-40 rounded-full bg-white/5 blur-2xl" />
         
-        {/* Floating elements */}
         <div className={`absolute top-32 right-20 transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{ transitionDelay: '200ms' }}>
           <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center animate-float">
             <FileText className="w-8 h-8 text-white" />
@@ -80,7 +79,6 @@ export default function LoginPage() {
           </div>
         </div>
         
-        {/* Content */}
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-16">
           <div className={`transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             <h2 className="text-4xl xl:text-5xl font-display font-bold text-white leading-tight mb-6">
@@ -88,11 +86,10 @@ export default function LoginPage() {
               <span className="text-white/80">starts here</span>
             </h2>
             <p className="text-white/70 text-lg max-w-md mb-10">
-              Join thousands of professionals who've optimized their resumes and landed their dream jobs.
+              Join thousands of professionals who&apos;ve optimized their resumes and landed their dream jobs.
             </p>
           </div>
           
-          {/* Feature list */}
           <ul className="space-y-4">
             {features.map((feature, i) => (
               <li 
@@ -108,7 +105,6 @@ export default function LoginPage() {
             ))}
           </ul>
           
-          {/* Stats */}
           <div className={`mt-12 pt-8 border-t border-white/20 grid grid-cols-2 gap-8 transition-all duration-700 ${mounted ? 'opacity-100' : 'opacity-0'}`} style={{ transitionDelay: '1000ms' }}>
             <div>
               <div className="text-3xl font-bold text-white">50K+</div>
@@ -125,7 +121,6 @@ export default function LoginPage() {
       {/* Right side - Form */}
       <div className="flex-1 flex flex-col justify-center py-12 px-6 sm:px-12 lg:px-16 xl:px-24">
         <div className={`mx-auto w-full max-w-md transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          {/* Back link */}
           <Link 
             href="/" 
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-10 group"
@@ -134,7 +129,6 @@ export default function LoginPage() {
             <span className="text-sm font-medium">Back to home</span>
           </Link>
 
-          {/* Header */}
           <div className="mb-10">
             <Link href="/" className="flex items-center gap-3 mb-8">
               <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/25">
@@ -146,12 +140,9 @@ export default function LoginPage() {
             <p className="text-muted-foreground mt-2 text-lg">Sign in to continue optimizing your career</p>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSignIn} className="space-y-6">
             <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium text-foreground">
-                Email address
-              </label>
+              <Label htmlFor="email">Email address</Label>
               <Input
                 id="email"
                 type="email"
@@ -160,16 +151,13 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={isLoading}
-                error={!!error}
                 className="h-12 text-base"
               />
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label htmlFor="password" className="block text-sm font-medium text-foreground">
-                  Password
-                </label>
+                <Label htmlFor="password">Password</Label>
                 <Link href="/auth/forgot-password" className="text-sm text-primary hover:text-accent transition-colors font-medium">
                   Forgot password?
                 </Link>
@@ -182,16 +170,16 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={isLoading}
-                error={!!error}
                 className="h-12 text-base"
               />
             </div>
 
             {error && (
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive">
-                <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                <span className="text-sm font-medium">{error}</span>
-              </div>
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
 
             <Button
@@ -205,17 +193,13 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          {/* Divider */}
           <div className="relative my-8">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-background text-muted-foreground">or continue with</span>
+            <Separator />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="px-4 bg-background text-muted-foreground text-sm">or continue with</span>
             </div>
           </div>
 
-          {/* Social login placeholder */}
           <Button
             type="button"
             variant="outline"
@@ -231,9 +215,8 @@ export default function LoginPage() {
             Google (Coming soon)
           </Button>
 
-          {/* Footer */}
           <p className="mt-10 text-center text-muted-foreground">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link href="/auth/signup" className="font-semibold text-primary hover:text-accent transition-colors">
               Sign up for free
             </Link>
