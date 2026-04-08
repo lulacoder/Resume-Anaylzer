@@ -12,6 +12,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "type-check": "tsc --noEmit",
+    "generate:icons": "node scripts/generate-pwa-icons.mjs",
     "supabase:link": "supabase link --project-ref qvfwskzszeaexsiwuqit --yes",
     "supabase:schema:pull": "supabase db pull --schema public",
     "supabase:types:live": "supabase gen types typescript --project-id qvfwskzszeaexsiwuqit --schema public > supabase-live-types.ts",

@@ -69,7 +69,7 @@ export const metadata: Metadata = {
       { url: '/favicon.ico', type: 'image/x-icon' },
     ],
     shortcut: '/logo.svg',
-    apple: '/logo.svg',
+    apple: '/apple-touch-icon.png',
   },
 };
 
@@ -80,6 +80,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${dmSans.variable} ${outfit.variable}`}>
+      <head>
+        {/* PWA meta tags */}
+        <meta name="application-name" content="Resume Analyzer" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Resume Analyzer" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="theme-color" content="#10B981" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+      </head>
       <body className="font-sans antialiased">
         <PerformanceProvider>
           <Navbar />

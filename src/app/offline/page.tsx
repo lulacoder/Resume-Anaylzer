@@ -1,12 +1,9 @@
-import type { Metadata } from 'next';
+'use client';
+
 import Link from 'next/link';
 import { LogoIcon } from '@/components/ui/LogoIcon';
 import { WifiOff, Home, RefreshCw } from 'lucide-react';
 
-export const metadata: Metadata = {
-  title: 'You\'re Offline | Resume Analyzer',
-  description: 'No internet connection. Please check your network and try again.',
-};
 
 export default function OfflinePage() {
   return (

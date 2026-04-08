@@ -36,3 +36,9 @@ lerna-debug.log*
 *.swp
 .envrc
 .tool-versions
+
+# PWA — compiled service worker (build artifact)
+/public/sw.js
+/public/sw.js.map
+/public/workbox-*.js
+/public/workbox-*.js.map
