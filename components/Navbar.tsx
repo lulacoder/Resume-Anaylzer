@@ -23,7 +23,8 @@ import { Separator } from './ui/separator';
 import { useSession } from '@/lib/hooks/useSession';
 import { useNavigation, useTheme } from '@/lib/hooks/useNavigation';
 import { User } from '@supabase/supabase-js';
-import { FileText, LayoutDashboard, Settings, LogOut, ChevronDown, Menu, Sun, Moon, Monitor } from 'lucide-react';
+import { LayoutDashboard, Settings, LogOut, ChevronDown, Menu, Sun, Moon, Monitor, FileText } from 'lucide-react';
+import { LogoIcon } from './ui/LogoIcon';
 
 export default function Navbar() {
   const { user, loading, signOut } = useSession();
@@ -74,11 +75,9 @@ export default function Navbar() {
     <Link 
       href={user ? "/dashboard" : "/"} 
       prefetch={true}
-      className="flex items-center space-x-2.5 hover:opacity-80 transition-opacity"
+      className="flex items-center space-x-2.5 hover:opacity-90 transition-opacity"
     >
-      <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
-        <FileText className="h-5 w-5 text-white" />
-      </div>
+      <LogoIcon size={40} />
       <span className="text-lg font-display font-bold text-foreground">Resume Analyzer</span>
     </Link>
   );
@@ -245,9 +244,7 @@ export default function Navbar() {
             <SheetContent side="right" className="w-80">
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                    <FileText className="h-4 w-4 text-white" />
-                  </div>
+                  <LogoIcon size={32} />
                   Resume Analyzer
                 </SheetTitle>
               </SheetHeader>

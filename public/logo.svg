@@ -1,0 +1,8 @@
+<svg width="512" height="512" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Rounded dark background -->
+  <rect width="64" height="64" rx="16" fill="#111827"/>
+  <!-- Abstract A -->
+  <path d="M32 16L18 48h6l4-10h10" stroke="#10B981" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Abstract R -->
+  <path d="M22 16h14c5.5 0 10 4.5 10 10s-4.5 10-10 10H22v12 M36 36l10 12" stroke="#34D399" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

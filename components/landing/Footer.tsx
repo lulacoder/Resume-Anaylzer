@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { Mail, Twitter, Linkedin, Github, FileText, Shield, HelpCircle } from 'lucide-react';
+import { Mail, Twitter, Linkedin, Github, Shield, HelpCircle } from 'lucide-react';
+import { LogoIcon } from '@/components/ui/LogoIcon';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -110,10 +111,8 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 lg:gap-12">
           {/* Brand Section */}
           <div className="col-span-2 md:col-span-3 lg:col-span-2">
-            <Link href="/" className="flex items-center gap-2.5 mb-4">
-              <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
-                <FileText className="h-5 w-5 text-primary-foreground" />
-              </div>
+            <Link href="/" className="flex items-center gap-2.5 mb-4 hover:opacity-90 transition-opacity">
+              <LogoIcon size={36} />
               <span className="text-lg font-semibold text-foreground">Resume Analyzer</span>
             </Link>
             <p className="text-muted-foreground text-sm mb-6 max-w-xs">

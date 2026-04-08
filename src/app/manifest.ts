@@ -7,9 +7,15 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Get AI-powered feedback on your resume with detailed analysis, match scoring, and improvement suggestions.',
     start_url: '/',
     display: 'standalone',
-    background_color: '#ffffff',
-    theme_color: '#000000',
+    background_color: '#111827',
+    theme_color: '#10B981',
     icons: [
+      {
+        src: '/logo.svg',
+        sizes: 'any',
+        type: 'image/svg+xml',
+        purpose: 'maskable',
+      },
       {
         src: '/favicon.ico',
         sizes: 'any',

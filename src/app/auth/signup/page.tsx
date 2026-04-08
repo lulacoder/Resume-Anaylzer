@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { FileText, ArrowLeft, AlertCircle, CheckCircle, Zap, Target, TrendingUp, Shield } from 'lucide-react';
+import { ArrowLeft, AlertCircle, CheckCircle, Zap, Target, TrendingUp, Shield } from 'lucide-react';
+import { LogoIcon } from '@/components/ui/LogoIcon';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
@@ -108,10 +109,8 @@ export default function SignupPage() {
           </Link>
 
           <div className="mb-10">
-            <Link href="/" className="flex items-center gap-3 mb-8">
-              <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/25">
-                <FileText className="h-6 w-6 text-white" />
-              </div>
+            <Link href="/" className="flex items-center gap-3 mb-8 hover:opacity-90 transition-opacity">
+              <LogoIcon size={48} />
               <span className="text-xl font-display font-bold text-foreground">Resume Analyzer</span>
             </Link>
             <h1 className="text-3xl font-display font-bold text-foreground">Create your account</h1>

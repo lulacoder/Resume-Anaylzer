@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, CheckCircle, FileText, Sparkles, Star } from 'lucide-react';
+import { ArrowRight, CheckCircle, Sparkles, Star } from 'lucide-react';
+import { LogoIcon } from '@/components/ui/LogoIcon';
 
 export default function HeroSection() {
   const [isVisible, setIsVisible] = useState(false);
@@ -106,9 +107,7 @@ export default function HeroSection() {
                 <div className="space-y-6">
                   {/* Header section */}
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
-                      <FileText className="w-7 h-7 text-white" />
-                    </div>
+                    <LogoIcon size={56} />
                     <div className="flex-1">
                       <div className="h-4 bg-foreground/15 rounded-lg w-2/3 mb-2"></div>
                       <div className="h-3 bg-foreground/10 rounded-lg w-1/3"></div>
