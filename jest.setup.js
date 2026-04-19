@@ -27,19 +27,28 @@ jest.mock('next/link', () => {
   }
 })
 
-// Mock Lucide React icons
-jest.mock('lucide-react', () => ({
-  ChevronDown: ({ className, ...props }) => <div data-testid="chevron-down" className={className} {...props} />,
-  ChevronUp: ({ className, ...props }) => <div data-testid="chevron-up" className={className} {...props} />,
-  TrendingUp: ({ className, ...props }) => <div data-testid="trending-up" className={className} {...props} />,
-  TrendingDown: ({ className, ...props }) => <div data-testid="trending-down" className={className} {...props} />,
-  Target: ({ className, ...props }) => <div data-testid="target" className={className} {...props} />,
-  Award: ({ className, ...props }) => <div data-testid="award" className={className} {...props} />,
-  BookOpen: ({ className, ...props }) => <div data-testid="book-open" className={className} {...props} />,
-  Lightbulb: ({ className, ...props }) => <div data-testid="lightbulb" className={className} {...props} />,
-  Clock: ({ className, ...props }) => <div data-testid="clock" className={className} {...props} />,
-  Star: ({ className, ...props }) => <div data-testid="star" className={className} {...props} />,
-}))
+// Mock Lucide React icons with a resilient fallback so new icons don't break tests.
+jest.mock('lucide-react', () => {
+  const React = require('react')
+
+  const toTestId = (name) =>
+    String(name)
+      .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+      .replace(/_/g, '-')
+      .toLowerCase()
+
+  return new Proxy(
+    {},
+    {
+      get: (_, iconName) => ({ className, ...props }) =>
+        React.createElement('span', {
+          'data-testid': toTestId(iconName),
+          className,
+          ...props,
+        }),
+    }
+  )
+})
 
 // Mock CSS modules and styles
 jest.mock('*.module.css', () => ({}))

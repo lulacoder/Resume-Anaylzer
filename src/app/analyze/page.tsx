@@ -10,7 +10,6 @@ import { DynamicAnalysisResult } from '@/lib/dynamic-imports';
 import { useRef, useState, Suspense } from 'react';
 import { AnalysisSpinner } from '@/components/ui/spinner';
 import { SlideUpTransition } from '@/components/ui/Transition';
-import { parsePdf } from '@/lib/parsePdf';
 import type { EnhancedAnalysisResult } from '@/types/index';
 import { FileText, Upload, Sparkles, Target, Shield, X, CheckCircle, AlertCircle, ArrowUp } from 'lucide-react';
 
@@ -126,15 +125,6 @@ export default function AnalyzePage() {
 
     try {
       setStage('validating');
-
-      const fileBuffer = await resumeFile.arrayBuffer();
-      const extractedText = await parsePdf(fileBuffer);
-      if (!extractedText || extractedText.length < 10) {
-        setError('Could not extract meaningful text from PDF. Please ensure the file contains selectable text.');
-        return;
-      }
-
-      formData.set('resumeText', extractedText);
 
       const abortController = new AbortController();
       abortControllerRef.current = abortController;

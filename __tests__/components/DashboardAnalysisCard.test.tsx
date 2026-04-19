@@ -49,12 +49,14 @@ jest.mock('../../components/ui', () => ({
 
 // Mock Lucide React icons
 jest.mock('lucide-react', () => ({
-  Target: ({ className, ...props }: any) => <div data-testid="target-icon" className={className} {...props} />,
-  Award: ({ className, ...props }: any) => <div data-testid="award-icon" className={className} {...props} />,
-  BookOpen: ({ className, ...props }: any) => <div data-testid="book-icon" className={className} {...props} />,
-  TrendingUp: ({ className, ...props }: any) => <div data-testid="trending-up-icon" className={className} {...props} />,
-  Clock: ({ className, ...props }: any) => <div data-testid="clock-icon" className={className} {...props} />,
-  Star: ({ className, ...props }: any) => <div data-testid="star-icon" className={className} {...props} />
+  Target: ({ className, ...props }: any) => <span data-testid="target-icon" className={className} {...props} />,
+  Award: ({ className, ...props }: any) => <span data-testid="award-icon" className={className} {...props} />,
+  BookOpen: ({ className, ...props }: any) => <span data-testid="book-icon" className={className} {...props} />,
+  TrendingUp: ({ className, ...props }: any) => <span data-testid="trending-up-icon" className={className} {...props} />,
+  Clock: ({ className, ...props }: any) => <span data-testid="clock-icon" className={className} {...props} />,
+  Star: ({ className, ...props }: any) => <span data-testid="star-icon" className={className} {...props} />,
+  ArrowRight: ({ className, ...props }: any) => <span data-testid="arrow-right-icon" className={className} {...props} />,
+  Sparkles: ({ className, ...props }: any) => <span data-testid="sparkles-icon" className={className} {...props} />,
 }))
 
 describe('DashboardAnalysisCard', () => {
@@ -67,7 +69,7 @@ describe('DashboardAnalysisCard', () => {
       render(<DashboardAnalysisCard {...defaultProps} />)
       
       expect(screen.getByText('Senior Frontend Developer')).toBeInTheDocument()
-      expect(screen.getByText(/Analyzed on/)).toBeInTheDocument()
+      expect(screen.getByText('Jan 15, 2024')).toBeInTheDocument()
       const scores = screen.getAllByText('85%')
       expect(scores.length).toBeGreaterThan(0)
     })
@@ -77,7 +79,7 @@ describe('DashboardAnalysisCard', () => {
       
       const enhancedBadge = screen.getByText('Enhanced')
       expect(enhancedBadge).toBeInTheDocument()
-      expect(enhancedBadge.closest('[data-testid="badge"]')).toHaveAttribute('data-variant', 'secondary')
+      expect(enhancedBadge.closest('[data-testid="badge"]')).toHaveAttribute('data-variant', 'outline')
     })
 
     it('shows industry badge when available', () => {
@@ -93,22 +95,22 @@ describe('DashboardAnalysisCard', () => {
       const experience85s = screen.getAllByText('85%')
       expect(skills90s.length).toBeGreaterThan(0)
       expect(experience85s.length).toBeGreaterThan(0)
-      expect(screen.getByText('Skills')).toBeInTheDocument()
+      expect(screen.getByText('Skills Match')).toBeInTheDocument()
       expect(screen.getByText('Experience')).toBeInTheDocument()
     })
 
     it('shows key insights with correct counts', () => {
       render(<DashboardAnalysisCard {...defaultProps} />)
       
-      expect(screen.getByText('3 skills')).toBeInTheDocument()
+      expect(screen.getByText((_, element) => (element?.textContent || '').includes('skills found'))).toBeInTheDocument()
       expect(screen.getByText('3 actions')).toBeInTheDocument()
       expect(screen.getByText('92% confidence')).toBeInTheDocument()
     })
 
-    it('has a view details button with enhanced text', () => {
+    it('has a view details button linked to the analysis page', () => {
       render(<DashboardAnalysisCard {...defaultProps} />)
       
-      const viewButton = screen.getByRole('button', { name: /View Enhanced Details/ })
+      const viewButton = screen.getByRole('button', { name: /View Details/ })
       expect(viewButton).toBeInTheDocument()
       
       // Check that the button is inside a link to the correct URL
@@ -126,7 +128,7 @@ describe('DashboardAnalysisCard', () => {
       render(<DashboardAnalysisCard {...legacyProps} />)
       
       expect(screen.getByText('Frontend Developer')).toBeInTheDocument()
-      expect(screen.getByText(/Analyzed on/)).toBeInTheDocument()
+      expect(screen.getByText('Jan 15, 2024')).toBeInTheDocument()
       expect(screen.getByText('75%')).toBeInTheDocument()
     })
 
@@ -187,7 +189,7 @@ describe('DashboardAnalysisCard', () => {
       render(<DashboardAnalysisCard {...mediumScoreProps} />)
       
       const scoreElement = screen.getByText('65%')
-      expect(scoreElement.className).toContain('text-yellow')
+      expect(scoreElement.className).toContain('text-warning')
     })
 
     it('applies correct color classes for low scores', () => {
@@ -205,7 +207,7 @@ describe('DashboardAnalysisCard', () => {
       render(<DashboardAnalysisCard {...lowScoreProps} />)
       
       const scoreElement = screen.getByText('45%')
-      expect(scoreElement.className).toContain('text-red')
+      expect(scoreElement.className).toContain('text-destructive')
     })
   })
 

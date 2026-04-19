@@ -24,7 +24,7 @@ const analyzeRateLimit = createRateLimitMiddleware(
   (request) => getClientIP(request)
 );
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const res = NextResponse.next();
 
   // Add security headers
@@ -77,13 +77,7 @@ export async function middleware(req: NextRequest) {
         error
       } = await supabase.auth.getSession();
 
-      if (error) {
-        console.error('Auth session error:', error);
-        // Don't redirect on session errors, let the client handle it
-        return res;
-      }
-
-      if (!session) {
+      if (error || !session) {
         const redirectUrl = req.nextUrl.clone();
         redirectUrl.pathname = '/auth/login';
         redirectUrl.searchParams.set(`redirectedFrom`, req.nextUrl.pathname);
@@ -91,8 +85,10 @@ export async function middleware(req: NextRequest) {
       }
     } catch (error) {
       console.error('Middleware auth check failed:', error);
-      // Don't redirect on middleware errors, let the client handle auth
-      return res;
+      const redirectUrl = req.nextUrl.clone();
+      redirectUrl.pathname = '/auth/login';
+      redirectUrl.searchParams.set(`redirectedFrom`, req.nextUrl.pathname);
+      return NextResponse.redirect(redirectUrl);
     }
   }
 

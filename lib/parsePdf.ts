@@ -134,9 +134,8 @@ async function getPdfjsLib(): Promise<PDFJSLib> {
         pdfjsLib = await import('pdfjs-dist') as PDFJSLib;
         configurePdfWorker(pdfjsLib);
       } else {
-        // Server-side: use a simple mock implementation for validation
-        // This avoids the DOMMatrix issue in Node.js
-        pdfjsLib = createServerSidePdfMock();
+        // Server-side: use the legacy build, which supports Node runtimes.
+        pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs') as PDFJSLib;
       }
     } catch (error) {
       console.error('Error loading PDF.js:', error);
@@ -231,24 +230,7 @@ export async function parsePdf(
 ): Promise<string | null> {
   return measurePerformance('pdf-parsing', async () => {
     try {
-      // Check if we're in a server environment
-      const isServer = typeof window === 'undefined';
-
-      if (isServer) {
-        // On server, we can't use PDF.js properly, so we'll extract text using a different approach
-        console.log('Server-side PDF processing - using basic text extraction');
-
-        // Basic PDF header validation
-        if (!hasPdfSignature(fileBuffer)) {
-          throw new PDFProcessingError('Not a valid PDF file');
-        }
-
-        // For server-side, we'll return a placeholder message
-        // The actual processing will happen client-side
-        return "PDF content will be processed client-side";
-      }
-
-      // Client-side processing
+      // Works in both client and server runtimes.
       await getPdfjsLib();
 
       // Fast local signature check before expensive parsing.
@@ -419,13 +401,14 @@ async function processVeryLargePdf(
 ): Promise<string | null> {
   try {
     const pdfLib = await getPdfjsLib();
+    const version = pdfLib.version || '5.3.93';
     // Load the PDF document with optimized streaming settings
     const loadingTask = pdfLib.getDocument({
       data: toPdfData(fileBuffer),
       disableStream: false,
       disableAutoFetch: false,
       rangeChunkSize: CHUNK_SIZE / 2, // Smaller chunks for very large files
-      cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/cmaps/',
+      cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${version}/cmaps/`,
       cMapPacked: true,
     });
 
@@ -527,16 +510,7 @@ export async function validatePdf(fileBuffer: ArrayBuffer): Promise<{
       return { valid: false, error: 'Not a valid PDF file' };
     }
 
-    // Check if we're in a server environment
-    const isServer = typeof window === 'undefined';
-
-    if (isServer) {
-      // On server, just do basic validation
-      console.log('Server-side PDF validation - basic header check only');
-      return { valid: true, pageCount: 1 }; // We don't know the actual page count
-    }
-
-    // Client-side full validation
+    // Full validation works in both client and server runtimes.
     const pdfLib = await getPdfjsLib();
     const loadingTask = pdfLib.getDocument({
       data: toPdfData(cloneArrayBuffer(fileBuffer)),

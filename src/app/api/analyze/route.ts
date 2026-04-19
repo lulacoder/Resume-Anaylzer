@@ -6,14 +6,18 @@ import { createClient } from '@/lib/supabase/server';
 import { EnhancedAnalysisSchema, createComprehensiveAnalysisPrompt, detectIndustry } from '@/lib/prompts';
 import { convertToLegacyFormat } from '@/lib/geminiClients';
 import { rateLimiter, RATE_LIMITS } from '@/lib/rate-limiting';
+import { parsePdf } from '@/lib/parsePdf';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 const RequestSchema = z.object({
-  jobTitle: z.string().trim().optional().default('Target Role'),
-  jobDescription: z.string().trim().min(1, 'Job description is required.'),
-  resumeText: z.string().trim().min(10, 'Resume text could not be extracted.'),
+  jobTitle: z.string().trim().max(160, 'Job title is too long.').optional().default('Target Role'),
+  jobDescription: z
+    .string()
+    .trim()
+    .min(1, 'Job description is required.')
+    .max(20000, 'Job description is too long.'),
 });
 
 type StreamEvent =
@@ -23,6 +27,25 @@ type StreamEvent =
   | { type: 'error'; error: string };
 
 const encoder = new TextEncoder();
+const MAX_RESUME_FILE_BYTES = 5 * 1024 * 1024; // 5MB
+const MAX_RESUME_TEXT_CHARS = 80_000;
+
+function isPdfUpload(file: File): boolean {
+  const type = (file.type || '').toLowerCase();
+  const hasValidMime = type === 'application/pdf' || type === 'application/x-pdf';
+  const hasPdfExtension = file.name.toLowerCase().endsWith('.pdf');
+
+  return hasValidMime || hasPdfExtension;
+}
+
+function hasPdfMagicHeader(fileBuffer: ArrayBuffer): boolean {
+  try {
+    const bytes = new Uint8Array(fileBuffer.slice(0, 5));
+    return bytes.length >= 5 && bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46 && bytes[4] === 0x2d;
+  } catch {
+    return false;
+  }
+}
 
 function toErrorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -91,7 +114,6 @@ export async function POST(request: NextRequest) {
   const parseResult = RequestSchema.safeParse({
     jobTitle: formData.get('jobTitle')?.toString(),
     jobDescription: formData.get('jobDescription')?.toString(),
-    resumeText: formData.get('resumeText')?.toString(),
   });
 
   if (!parseResult.success) {
@@ -114,27 +136,89 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const { jobTitle, jobDescription, resumeText } = parseResult.data;
+  if (!isPdfUpload(resumeFile)) {
+    return new Response(JSON.stringify({ error: 'Please upload a PDF file.' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  if (resumeFile.size < 1) {
+    return new Response(JSON.stringify({ error: 'Resume file is empty.' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  if (resumeFile.size > MAX_RESUME_FILE_BYTES) {
+    return new Response(JSON.stringify({ error: 'File size must be less than 5MB.' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  const { jobTitle, jobDescription } = parseResult.data;
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
+      let uploadedFilePath: string | null = null;
+      let resumeRecordId: string | null = null;
+      let analysisRecordId: string | null = null;
+
+      const cleanupOnFailure = async () => {
+        if (!analysisRecordId && resumeRecordId) {
+          const { error: cleanupResumeError } = await supabase
+            .from('resumes')
+            .delete()
+            .eq('id', resumeRecordId)
+            .eq('user_id', user.id);
+
+          if (cleanupResumeError) {
+            console.error('Failed to clean up resume record after analyze failure:', cleanupResumeError);
+          }
+        }
+
+        if (!analysisRecordId && uploadedFilePath) {
+          const { error: cleanupStorageError } = await supabase.storage.from('resumes').remove([uploadedFilePath]);
+          if (cleanupStorageError) {
+            console.error('Failed to clean up uploaded file after analyze failure:', cleanupStorageError);
+          }
+        }
+      };
+
       try {
         streamLine(controller, { type: 'stage', stage: 'validating' });
 
-        const safeFileName = resumeFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const filePath = `${user.id}/${Date.now()}_${safeFileName}`;
+        const fileBuffer = await resumeFile.arrayBuffer();
+        if (!hasPdfMagicHeader(fileBuffer)) {
+          throw new Error('The uploaded file is not a valid PDF.');
+        }
+
+        let resumeText = await parsePdf(fileBuffer);
+        if (!resumeText || resumeText.trim().length < 10) {
+          throw new Error('Could not extract meaningful text from PDF. Please ensure the file contains selectable text.');
+        }
+
+        if (resumeText.length > MAX_RESUME_TEXT_CHARS) {
+          resumeText = resumeText.slice(0, MAX_RESUME_TEXT_CHARS);
+        }
+
+        const originalFileName = resumeFile.name.trim() || 'resume.pdf';
+        const safeFileName = originalFileName.replace(/[^a-zA-Z0-9.-]/g, '_') || 'resume.pdf';
+        const filePath = `${user.id}/${Date.now()}_${crypto.randomUUID()}_${safeFileName}`;
 
         streamLine(controller, { type: 'stage', stage: 'uploading' });
         const { error: uploadError } = await supabase.storage
           .from('resumes')
           .upload(filePath, resumeFile, {
             cacheControl: '3600',
-            upsert: true,
+            upsert: false,
           });
 
         if (uploadError) {
           throw new Error(`Storage upload failed: ${uploadError.message}`);
         }
+        uploadedFilePath = filePath;
 
         streamLine(controller, { type: 'stage', stage: 'saving' });
         const { data: resumeRecord, error: resumeInsertError } = await supabase
@@ -151,6 +235,7 @@ export async function POST(request: NextRequest) {
         if (resumeInsertError || !resumeRecord) {
           throw new Error(`Failed to save resume record: ${resumeInsertError?.message || 'Unknown error'}`);
         }
+        resumeRecordId = resumeRecord.id;
 
         streamLine(controller, { type: 'stage', stage: 'analyzing' });
 
@@ -204,9 +289,11 @@ export async function POST(request: NextRequest) {
         if (analysisInsertError || !analysisRecord) {
           throw new Error(`Failed to save analysis: ${analysisInsertError?.message || 'Unknown error'}`);
         }
+        analysisRecordId = analysisRecord.id;
 
         streamLine(controller, { type: 'complete', analysis: analysisRecord });
       } catch (error) {
+        await cleanupOnFailure();
         streamLine(controller, { type: 'error', error: toErrorMessage(error) });
       } finally {
         controller.close();

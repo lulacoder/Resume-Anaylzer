@@ -10,6 +10,14 @@ import type {
   RewriteSection,
 } from '@/types/index';
 
+function isUniqueViolation(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  return (error as { code?: string }).code === '23505';
+}
+
 /**
  * Get user's analysis history with optimized query and caching
  * This function is cached for 1 minute to reduce database load
@@ -219,6 +227,23 @@ export async function getOrCreateChatSession(analysisId: string, userId: string)
     })
     .select('id, analysis_id, user_id, title, created_at, updated_at')
     .single();
+
+  if (createError && isUniqueViolation(createError)) {
+    const { data: concurrentSession, error: concurrentError } = await supabase
+      .from('analysis_chat_sessions')
+      .select('id, analysis_id, user_id, title, created_at, updated_at')
+      .eq('analysis_id', analysisId)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (concurrentError || !concurrentSession) {
+      throw new Error(`Failed to resolve chat session after concurrent creation: ${concurrentError?.message || 'Unknown error'}`);
+    }
+
+    return concurrentSession;
+  }
 
   if (createError || !createdSession) {
     throw new Error(`Failed to create chat session: ${createError?.message || 'Unknown error'}`);
@@ -452,51 +477,60 @@ export async function createRewriteVersion(
   generationContext: Record<string, unknown> = {},
 ) {
   const supabase = await createClient();
+  const maxAttempts = 5;
 
-  const { data: latestVersion, error: latestError } = await supabase
-    .from('analysis_rewrite_versions')
-    .select('version_number')
-    .eq('analysis_id', analysisId)
-    .eq('user_id', userId)
-    .order('version_number', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const { data: latestVersion, error: latestError } = await supabase
+      .from('analysis_rewrite_versions')
+      .select('version_number')
+      .eq('analysis_id', analysisId)
+      .eq('user_id', userId)
+      .order('version_number', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-  if (latestError) {
-    throw new Error(`Failed to resolve next rewrite version: ${latestError.message}`);
+    if (latestError) {
+      throw new Error(`Failed to resolve next rewrite version: ${latestError.message}`);
+    }
+
+    const nextVersion = (latestVersion?.version_number || 0) + 1;
+
+    const { data: createdVersion, error: createError } = await supabase
+      .from('analysis_rewrite_versions')
+      .insert({
+        analysis_id: analysisId,
+        user_id: userId,
+        version_number: nextVersion,
+        sections,
+        generation_context: generationContext,
+      })
+      .select('id, analysis_id, user_id, version_number, sections, generation_context, created_at')
+      .single();
+
+    if (createError && isUniqueViolation(createError)) {
+      continue;
+    }
+
+    if (createError || !createdVersion) {
+      throw new Error(`Failed to create rewrite version: ${createError?.message || 'Unknown error'}`);
+    }
+
+    const { error: legacyUpdateError } = await supabase
+      .from('analyses')
+      .update({
+        improved_sections: { sections } as unknown as never,
+      })
+      .eq('id', analysisId)
+      .eq('user_id', userId);
+
+    if (legacyUpdateError) {
+      throw new Error(`Failed to update legacy improved sections: ${legacyUpdateError.message}`);
+    }
+
+    return createdVersion;
   }
 
-  const nextVersion = (latestVersion?.version_number || 0) + 1;
-
-  const { data: createdVersion, error: createError } = await supabase
-    .from('analysis_rewrite_versions')
-    .insert({
-      analysis_id: analysisId,
-      user_id: userId,
-      version_number: nextVersion,
-      sections,
-      generation_context: generationContext,
-    })
-    .select('id, analysis_id, user_id, version_number, sections, generation_context, created_at')
-    .single();
-
-  if (createError || !createdVersion) {
-    throw new Error(`Failed to create rewrite version: ${createError?.message || 'Unknown error'}`);
-  }
-
-  const { error: legacyUpdateError } = await supabase
-    .from('analyses')
-    .update({
-      improved_sections: { sections } as unknown as never,
-    })
-    .eq('id', analysisId)
-    .eq('user_id', userId);
-
-  if (legacyUpdateError) {
-    throw new Error(`Failed to update legacy improved sections: ${legacyUpdateError.message}`);
-  }
-
-  return createdVersion;
+  throw new Error('Failed to allocate rewrite version after repeated concurrent attempts');
 }
 
 export async function createApplicationPackage(
@@ -508,41 +542,50 @@ export async function createApplicationPackage(
   generationContext: Record<string, unknown> = {},
 ) {
   const supabase = await createClient();
+  const maxAttempts = 5;
 
-  const { data: latestVersion, error: latestError } = await supabase
-    .from('analysis_application_packages')
-    .select('version_number')
-    .eq('analysis_id', analysisId)
-    .eq('user_id', userId)
-    .order('version_number', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const { data: latestVersion, error: latestError } = await supabase
+      .from('analysis_application_packages')
+      .select('version_number')
+      .eq('analysis_id', analysisId)
+      .eq('user_id', userId)
+      .order('version_number', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-  if (latestError) {
-    throw new Error(`Failed to resolve next application package version: ${latestError.message}`);
+    if (latestError) {
+      throw new Error(`Failed to resolve next application package version: ${latestError.message}`);
+    }
+
+    const nextVersion = (latestVersion?.version_number || 0) + 1;
+
+    const { data, error } = await supabase
+      .from('analysis_application_packages')
+      .insert({
+        analysis_id: analysisId,
+        user_id: userId,
+        coach_profile_id: coachProfileId,
+        version_number: nextVersion,
+        package_name: packageName,
+        content,
+        generation_context: generationContext,
+      })
+      .select('id, analysis_id, user_id, coach_profile_id, version_number, package_name, content, generation_context, created_at')
+      .single();
+
+    if (error && isUniqueViolation(error)) {
+      continue;
+    }
+
+    if (error || !data) {
+      throw new Error(`Failed to create application package: ${error?.message || 'Unknown error'}`);
+    }
+
+    return data as AnalysisApplicationPackage;
   }
 
-  const nextVersion = (latestVersion?.version_number || 0) + 1;
-
-  const { data, error } = await supabase
-    .from('analysis_application_packages')
-    .insert({
-      analysis_id: analysisId,
-      user_id: userId,
-      coach_profile_id: coachProfileId,
-      version_number: nextVersion,
-      package_name: packageName,
-      content,
-      generation_context: generationContext,
-    })
-    .select('id, analysis_id, user_id, coach_profile_id, version_number, package_name, content, generation_context, created_at')
-    .single();
-
-  if (error || !data) {
-    throw new Error(`Failed to create application package: ${error?.message || 'Unknown error'}`);
-  }
-
-  return data as AnalysisApplicationPackage;
+  throw new Error('Failed to allocate application package version after repeated concurrent attempts');
 }
 
 export async function backfillRewriteVersionFromLegacy(analysisId: string, userId: string) {
