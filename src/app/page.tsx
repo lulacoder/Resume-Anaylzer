@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import HeroSection from '@/components/landing/HeroSection';
 import {
   DynamicFeaturesSection,
-  DynamicTestimonialsSection,
+  // DynamicTestimonialsSection,
   DynamicCTASection,
   DynamicFooter,
   LoadingSpinner,
@@ -28,9 +28,9 @@ export default async function LandingPage() {
         <DynamicFeaturesSection />
       </Suspense>
       
-      <Suspense fallback={<LoadingSpinner />}>
+      {/* <Suspense fallback={<LoadingSpinner />}>
         <DynamicTestimonialsSection />
-      </Suspense>
+      </Suspense> */}
       
       <Suspense fallback={<LoadingSpinner />}>
         <DynamicCTASection />
